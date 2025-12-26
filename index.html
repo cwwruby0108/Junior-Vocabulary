@@ -3,330 +3,623 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的單字練習</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>國二英語單字特訓</title>
+    
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 引入 Babel 用來解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 引入 Tailwind CSS 用於樣式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
-        :root {
-            --bg-color: #f3f4f6;
-            --card-front-bg: #ffffff;
-            --card-back-bg: #4338ca; /* 參考圖片的深藍紫色 */
-            --text-main: #1f2937;
-            --text-white: #ffffff;
-            --tag-gray-bg: #f3f4f6;
-            --tag-gray-text: #6b7280;
-            --tag-purple-bg: #e0e7ff;
-            --tag-purple-text: #4338ca;
-        }
-
-        body {
-            font-family: 'Segoe UI', 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-
-        #loading { font-size: 1.2rem; color: #666; }
-
-        .card-container {
+        .perspective-1000 {
             perspective: 1000px;
-            width: 320px;
-            height: 480px;
-            cursor: pointer;
         }
-
-        .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
+        .preserve-3d {
             transform-style: preserve-3d;
-            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-radius: 20px;
         }
-
-        .card.is-flipped { transform: rotateY(180deg); }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+        .backface-hidden {
             backface-visibility: hidden;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 30px 20px;
-            box-sizing: border-box;
-            text-align: center;
         }
-
-        /* --- 正面 (白色) --- */
-        .card-front { background-color: var(--card-front-bg); }
-
-        .icon-area {
-            font-size: 80px;
-            margin-top: 20px;
-        }
-
-        .word-main {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--text-main);
-            margin: 10px 0;
-        }
-
-        .tags {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: auto;
-        }
-
-        .tag {
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            font-family: monospace;
-        }
-
-        .tag.phonetic {
-            background-color: var(--tag-gray-bg);
-            color: var(--tag-gray-text);
-        }
-
-        .tag.pos {
-            background-color: var(--tag-purple-bg);
-            color: var(--tag-purple-text);
-        }
-
-        /* --- 背面 (深藍色) --- */
-        .card-back {
-            background-color: var(--card-back-bg);
-            color: white;
+        .rotate-y-180 {
             transform: rotateY(180deg);
         }
-
-        .definition-main {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-top: 20px;
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        .sentence-box {
-            background-color: rgba(255, 255, 255, 0.15);
-            padding: 20px;
-            border-radius: 12px;
-            width: 100%;
-            text-align: left;
-            margin-top: 20px;
-            margin-bottom: auto;
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
         }
-
-        .en-sentence {
-            font-size: 1rem;
-            margin-bottom: 8px;
-            line-height: 1.4;
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
         }
-
-        .cn-sentence {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.8);
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            padding-top: 8px;
-        }
-
-        /* --- 發音按鈕 --- */
-        .audio-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            transition: transform 0.1s;
-        }
-
-        .audio-btn.front {
-            background-color: #e0e7ff;
-            color: #4338ca;
-        }
-
-        .audio-btn.back {
-            background-color: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-        .audio-btn:active { transform: scale(0.95); }
-
-        .hint {
-            font-size: 0.8rem;
-            color: #9ca3af;
-            margin-top: 10px;
-        }
-
-        /* --- 下方切換按鈕 --- */
-        .controls {
-            margin-top: 25px;
-            display: flex;
-            gap: 15px;
-        }
-        
-        .nav-btn {
-            padding: 10px 24px;
-            border-radius: 50px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-50">
+    <div id="root"></div>
 
-    <div id="loading">載入單字中...</div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
 
-    <div class="card-container" id="cardContainer" style="display:none;" onclick="flipCard()">
-        <div class="card" id="flashcard">
-            <div class="card-face card-front">
-                <div class="icon-area">🍯</div> <div class="word-main" id="word">Word</div>
-                <div class="tags">
-                    <span class="tag phonetic" id="phonetic">[]</span>
-                    <span class="tag pos" id="pos">n.</span>
-                </div>
+        // --- 內建圖示組件 (解決外部載入錯誤的問題) ---
+        const IconBase = ({ size = 24, className = "", children, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+                {...props}
+            >
+                {children}
+            </svg>
+        );
 
-                <div style="margin-top: auto;">
-                    <button class="audio-btn front" onclick="event.stopPropagation(); speakWord()">
-                        <i class="fas fa-volume-high"></i>
-                    </button>
-                    <div class="hint">點擊查看意思</div>
-                </div>
-            </div>
+        const Volume2 = (props) => (
+            <IconBase {...props}>
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </IconBase>
+        );
 
-            <div class="card-face card-back">
-                <div class="definition-main" id="definition">中文意思</div>
-                
-                <div class="sentence-box">
-                    <div class="en-sentence" id="enSentence">English sentence here.</div>
-                    <div class="cn-sentence" id="cnSentence">中文例句</div>
-                </div>
+        const BookOpen = (props) => (
+            <IconBase {...props}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </IconBase>
+        );
 
-                <button class="audio-btn back" onclick="event.stopPropagation(); speakWord()">
-                    <i class="fas fa-volume-high"></i>
-                </button>
-            </div>
-        </div>
-    </div>
+        const Brain = (props) => (
+            <IconBase {...props}>
+                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+            </IconBase>
+        );
 
-    <div class="controls" id="controls" style="display:none;">
-        <button class="nav-btn" style="background:white; color:#333;" onclick="prevCard()">上一張</button>
-        <button class="nav-btn" style="background:#4338ca; color:white;" onclick="nextCard()">下一張</button>
-    </div>
+        const RotateCw = (props) => (
+            <IconBase {...props}>
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+            </IconBase>
+        );
 
-    <script>
-        // 你的 Google Sheet CSV 連結 (請確認這是最新的)
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkr82Giho8k-FgUEchtyZsC-l6NeJyEMWK0DfPJCTtBpViqxU53B-ol8JfkOJVlhJRsUwpvk0ydZgU/pub?output=csv';
+        const CheckCircle = (props) => (
+            <IconBase {...props}>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+            </IconBase>
+        );
 
-        let vocabularyList = [];
-        let currentIndex = 0;
+        const XCircle = (props) => (
+            <IconBase {...props}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
+            </IconBase>
+        );
 
-        window.onload = function() { loadData(); };
+        const Trophy = (props) => (
+            <IconBase {...props}>
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </IconBase>
+        );
 
-        function loadData() {
-            Papa.parse(csvUrl, {
-                download: true,
-                header: false,
-                complete: function(results) {
-                    // 過濾空行
-                    const data = results.data.filter(row => row.length > 1 && row[0] !== "英文單字");
-                    
-                    if(data.length > 0) {
-                        vocabularyList = shuffle(data);
-                        document.getElementById('loading').style.display = 'none';
-                        document.getElementById('cardContainer').style.display = 'block';
-                        document.getElementById('controls').style.display = 'flex';
-                        showCard(currentIndex);
-                    } else {
-                        document.getElementById('loading').innerText = "讀取不到資料，請檢查 Sheet 權限或連結";
-                    }
-                }
-            });
-        }
+        const ArrowRight = (props) => (
+            <IconBase {...props}>
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+            </IconBase>
+        );
 
-        function showCard(index) {
-            const item = vocabularyList[index];
-            const card = document.getElementById('flashcard');
+        const LayoutGrid = (props) => (
+            <IconBase {...props}>
+                <rect width="7" height="7" x="3" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="14" rx="1" />
+                <rect width="7" height="7" x="3" y="14" rx="1" />
+            </IconBase>
+        );
+        // --- 圖示組件結束 ---
+
+        // 單元資料庫
+        const textbookData = {
+            3: {
+                title: "Unit 3: The Animals Work Hard",
+                words: [
+                { word: "American", kk: "[əˋmɛrɪkən]", pos: "n.", def: "美國人", sentence: "Jack's wife is an American.", trans: "傑克的太太是美國人。", emoji: "🇺🇸" },
+                { word: "million", kk: "[ˋmɪljən]", pos: "n.", def: "百萬", sentence: "There are about 23 million people in Taiwan.", trans: "臺灣約有兩千三百萬人。", emoji: "💰" },
+                { word: "pound", kk: "[paʊnd]", pos: "n.", def: "磅 (重量單位)", sentence: "The pork is on sale this week. It costs only two dollars a pound.", trans: "本週豬肉有特價。一磅只要價兩美元。", emoji: "⚖️" },
+                { word: "pick", kk: "[pɪk]", pos: "v.", def: "採摘；撿拾", sentence: "When we climbed up the mountain, we picked some flowers along the way.", trans: "我們爬山時，一路上採花。", emoji: "🤏" },
+                { word: "bean", kk: "[bin]", pos: "n.", def: "豆", sentence: "Roast chicken with green beans is the best dish at this restaurant.", trans: "烤雞佐四季豆是這家餐館的最佳菜餚。", emoji: "🫛" },
+                { word: "cent", kk: "[sɛnt]", pos: "n.", def: "美分", sentence: "He works very hard, but he only gets 80 cents an hour.", trans: "他努力工作，但他只賺取時薪八十美分。", emoji: "🪙" },
+                { word: "chance", kk: "[tʃæns]", pos: "n.", def: "機會", sentence: "These kids are poor. They don't even have a chance to go to school.", trans: "這些孩童很可憐。他們甚至沒有機會上學。", emoji: "🎲" },
+                { word: "choose", kk: "[tʃuz]", pos: "v.", def: "選擇", sentence: "Teresa chose a red dress for the Christmas party.", trans: "特瑞莎選了一件紅洋裝參加耶誕派對。", emoji: "👆" },
+                { word: "hard", kk: "[hɑrd]", pos: "adv.; adj.", def: "努力地；困難的", sentence: "Albert worked hard and made a lot of money.", trans: "亞伯特工作勤奮，賺了很多錢。", emoji: "💪" },
+                { word: "well", kk: "[wɛl]", pos: "adv.", def: "好地", sentence: "Dad is old, and he can't hear very well.", trans: "爸爸年紀大了，而且聽力不太好。", emoji: "👍" },
+                { word: "share", kk: "[ʃɛr]", pos: "v.", def: "分享", sentence: "I would like to share my stories about my days in Australia.", trans: "我想要分享我在澳洲的生活故事。", emoji: "🍰" },
+                { word: "weak", kk: "[wik]", pos: "adj.", def: "虛弱的", sentence: "He felt weak when he traveled to India for vacation.", trans: "當他到印度度假時，他感到虛弱。", emoji: "🥀" },
+                { word: "hen", kk: "[hɛn]", pos: "n.", def: "母雞", sentence: "We laughed when Jack walked like a hen.", trans: "當傑克像隻母雞般走路時，我們都笑了。", emoji: "🐔" },
+                { word: "dirty", kk: "[ˋdɝtɪ]", pos: "adj.", def: "髒的", sentence: "Our hands, feet, and clothes were dirty after we played soccer.", trans: "踢完足球後，我們的手腳和衣服都髒了。", emoji: "💩" },
+                { word: "without", kk: "[wɪˋðaʊt]", pos: "prep.", def: "沒有；無", sentence: "I left school without an umbrella, so I got wet when it rained.", trans: "我離開學校時沒帶傘，所以下雨時，我淋濕了。", emoji: "🚫" },
+                { word: "quickly", kk: "[ˋkwɪklɪ]", pos: "adv.", def: "快地", sentence: "Bob, don't eat so quickly. It's bad for your health.", trans: "鮑伯，別吃這麼快。這不利於你的健康。", emoji: "🐆" },
+                { word: "web page", kk: "[ˋwɛb ͵pedʒ]", pos: "n.", def: "網頁", sentence: "This web page looks terrible. There are too many colors.", trans: "這網頁看起來很糟。太多色彩了。", emoji: "🌐" },
+                { word: "service", kk: "[ˋsɝvɪs]", pos: "n.", def: "服務", sentence: "The hotel provides good service.", trans: "這家旅館提供良好的服務。", emoji: "💁" },
+                { word: "clearly", kk: "[ˋklɪrlɪ]", pos: "adv.", def: "清楚地", sentence: "We can see the fish in the river clearly because the water is clean.", trans: "水很乾淨，我們可以清楚地看見河裡的魚。", emoji: "👓" },
+                { word: "No problem", kk: "[noˋprɑbləm]", pos: "phr.", def: "沒問題", sentence: "A: Can you drive me to the airport later? B: Sure. No problem.", trans: "A：你待會兒可以載我到機場嗎？ B：當然可以。沒問題。", emoji: "👌" },
+                { word: "wise", kk: "[waɪz]", pos: "adj.", def: "明智的", sentence: "It is wise to think twice before you decide to do anything big.", trans: "做任何重大決定時，三思而後行是明智的。", emoji: "🦉" },
+                { word: "mean", kk: "[min]", pos: "adj.", def: "刻薄的；兇惡的", sentence: "Cinderella's sisters are mean to her.", trans: "仙杜瑞拉的姊姊們對她很壞。", emoji: "😈" },
+                { word: "make", kk: "[mek]", pos: "v.", def: "要...做...；使...", sentence: "Mom made my brother mop the floor and wipe the tables.", trans: "媽媽要我哥哥拖地和擦桌子。", emoji: "🔨" },
+                { word: "break", kk: "[brek]", pos: "n.", def: "休息", sentence: "At break, we usually share some snacks with each other.", trans: "我們常常在休息時間互相分享一些零食。", emoji: "☕" },
+                { word: "over", kk: "[ˋovɚ]", pos: "prep.", def: "超過", sentence: "Yesterday, Jerry worked over twelve hours. He looked really tired.", trans: "傑瑞昨天工作超過十二個小時。他看起來真的很疲倦。", emoji: "📈" },
+                { word: "treat", kk: "[trit]", pos: "v.", def: "對待", sentence: "Our teacher treats all the students the same.", trans: "我們老師同樣地對待所有的學生。", emoji: "🤝" },
+                { word: "take... down", kk: "[͵tek ˋdaʊn]", pos: "phr.", def: "使...垮臺；拆除", sentence: "They are going to take the old house down and build a new one.", trans: "他們打算拆除那棟老房子，並建造一棟新的。", emoji: "🏗️" },
+                { word: "have", kk: "[hæv]", pos: "v.", def: "使... (使役動詞)", sentence: "I'll have my secretary give you a call in ten minutes.", trans: "我會吩咐我的祕書十分鐘之後打電話給你。", emoji: "🗣️" },
+                ]
+            },
+            4: {
+                title: "Unit 4: I Can Hear the Wind Blow",
+                words: [
+                { word: "typhoon", kk: "[taɪˋfun]", pos: "n.", def: "颱風", sentence: "The typhoon season falls between July and September in Taiwan.", trans: "七月到九月在臺灣是颱風季節。", emoji: "🌀" },
+                { word: "rose", kk: "[roz]", pos: "n.", def: "玫瑰花", sentence: "On Valentine's Day, Judy's husband gave her a red rose and a card.", trans: "情人節那天，茱蒂的先生給了她一朵紅玫瑰和一張卡片。", emoji: "🌹" },
+                { word: "balcony", kk: "[ˋbælkənɪ]", pos: "n.", def: "陽台", sentence: "She is hanging the clothes on the balcony.", trans: "她正在把衣服晾在陽臺上。", emoji: "🏙️" },
+                { word: "must", kk: "[mʌst]", pos: "aux.", def: "必須；一定", sentence: "For your own safety, you must follow the rules when driving.", trans: "為了你自身的安全，你在開車時必須遵守規則。", emoji: "⚠️" },
+                { word: "prepare", kk: "[prɪˋpɛr]", pos: "v.", def: "準備", sentence: "She is preparing sandwiches, hamburgers, and orange juice for the picnic.", trans: "她正在為野餐準備三明治、漢堡和柳橙汁。", emoji: "🎒" },
+                { word: "should", kk: "[ʃʊd]", pos: "aux.", def: "應該", sentence: "You should wash your hands before you eat.", trans: "吃東西之前你應該要洗手。", emoji: "☝️" },
+                { word: "candle", kk: "[ˋkænd!]", pos: "n.", def: "蠟燭", sentence: "The wind is really strong. It blows out the candle.", trans: "風真的很大。它吹滅了蠟燭。", emoji: "🕯️" },
+                { word: "light", kk: "[laɪt]", pos: "n.; v.", def: "燈；光；點亮", sentence: "It's too dark here. Can you turn on the lights?", trans: "這裡太暗了。你可以開燈嗎？", emoji: "🔦" },
+                { word: "myself", kk: "[maɪˋsɛlf]", pos: "pron.", def: "我自己", sentence: "A: Who made this delicious cake? B: I made it by myself.", trans: "A：這個美味的蛋糕是誰做的？ B：我自己做的。", emoji: "🙋" },
+                { word: "yourself", kk: "[jʊrˋsɛlf]", pos: "pron.", def: "你自己", sentence: "Did you finish your math homework by yourself?", trans: "你自己完成數學作業了嗎？", emoji: "🫵" },
+                { word: "radio", kk: "[ˋredɪ͵o]", pos: "n.", def: "收音機；廣播", sentence: "I sat in my car and turned on the radio.", trans: "我坐在車裡，並打開收音機。", emoji: "📻" },
+                { word: "news", kk: "[njuz]", pos: "n.", def: "新聞；消息", sentence: "There was news on the big earthquake last night.", trans: "有關於昨晚大地震的消息。", emoji: "📰" },
+                { word: "if", kk: "[ɪf]", pos: "conj.", def: "如果", sentence: "If you come home late, I'll have dinner by myself.", trans: "如果你很晚回家，我就自己一個人吃晚餐。", emoji: "🤔" },
+                { word: "or", kk: "[ɔr]", pos: "conj.", def: "否則", sentence: "We should leave now, or we'll be late for the movie.", trans: "我們現在應該要離開了，否則我們看電影會遲到。", emoji: "🚪" },
+                { word: "have to", kk: "[ˋhæv tə]", pos: "phr.", def: "必須", sentence: "Before the typhoon comes, we have to prepare enough food and save water.", trans: "在颱風來臨之前，我們必須準備足夠的食物並儲水。", emoji: "📋" },
+                { word: "go out", kk: "[͵go ˋaʊt]", pos: "phr.", def: "熄滅", sentence: "The fire finally went out with the help of the rescue team.", trans: "在救援隊的幫助下，大火終於熄滅了。", emoji: "🧯" },
+                { word: "train", kk: "[tren]", pos: "v.", def: "訓練", sentence: "She trained hard to be a successful basketball player.", trans: "她努力訓練成為一名成功的籃球員。", emoji: "🏋️" },
+                { word: "face", kk: "[fes]", pos: "v.", def: "面對", sentence: "Ron, you have to face the fear of spiders.", trans: "榮恩，你必須面對你對蜘蛛的恐懼。", emoji: "😨" },
+                { word: "try one's best", kk: "[ˋtraɪ wʌnz ˋbɛst]", pos: "phr.", def: "盡力而為", sentence: "The doctor tried her best to save the dying man.", trans: "這位醫生盡全力挽救那位垂死的男士。", emoji: "🔥" },
+                { word: "turn on", kk: "[͵tɝn ˋɑn]", pos: "phr.", def: "打開（電源）", sentence: "The boy turned on the TV right after he got back home.", trans: "男孩一回到家後馬上就打開了電視。", emoji: "📺" },
+                { word: "latest", kk: "[ˋletɪst]", pos: "adj.", def: "最新的", sentence: "The reporter is reporting the latest news on TV.", trans: "這位記者正在電視上報導最新的消息。", emoji: "🆕" },
+                { word: "as", kk: "[æz]", pos: "prep.", def: "作為；如同", sentence: "Danny's father works as a taxi driver.", trans: "丹尼的父親是位計程車司機。", emoji: "🚕" },
+                { word: "earthquake", kk: "[ˋɝθ͵kwek]", pos: "n.", def: "地震", sentence: "The big earthquake killed many people.", trans: "大地震使許多人喪生。", emoji: "🏚️" },
+                { word: "bravely", kk: "[ˋbrevlɪ]", pos: "adv.", def: "勇敢地", sentence: "The soldiers fight bravely for their country.", trans: "軍人們為自己的國家英勇奮戰。", emoji: "⚔️" },
+                { word: "through", kk: "[θru]", pos: "prep.", def: "穿越", sentence: "It's dangerous to walk through a rainforest in the dark.", trans: "在黑暗中徒步穿越雨林很危險。", emoji: "🌲" },
+                { word: "sharp", kk: "[ʃɑrp]", pos: "adj.", def: "尖銳的", sentence: "Be careful of the sharp knife. You may get hurt.", trans: "要小心這把鋒利的刀子。你可能會受傷。", emoji: "🔪" },
+                { word: "reach", kk: "[ritʃ]", pos: "v.", def: "到達", sentence: "They climbed up the mountain and reached the top.", trans: "他們爬上山，到達山頂。", emoji: "🏁" },
+                { word: "space", kk: "[spes]", pos: "n.", def: "空間", sentence: "The concert was full of people. There was no space for more.", trans: "這個音樂會充滿了人。沒有空間容納更多人了。", emoji: "🚀" },
+                { word: "size", kk: "[saɪz]", pos: "n.", def: "大小；尺寸", sentence: "We wore the same size T-shirt.", trans: "我們穿著相同尺寸的T恤。", emoji: "👕" },
+                { word: "times", kk: "[taɪmz]", pos: "n.", def: "倍", sentence: "Ms. Johnson makes five times more money than Mr. Johnson.", trans: "強森太太賺的錢是強生先生的五倍多。", emoji: "✖️" }
+                ]
+            },
+            5: {
+                title: "Unit 5: All of the Food Stands Look Great",
+                words: [
+                { word: "although", kk: "[ɔlˋðo]", pos: "conj.", def: "雖然", sentence: "Although Mr. Mills doesn't feel good, he still came to work today.", trans: "雖然米爾斯先生不太舒服，他今天仍然來上班。", emoji: "🤨" },
+                { word: "matter", kk: "[ˋmætɚ]", pos: "n.", def: "問題；事件", sentence: "A: What's the matter? You look tired. B: I didn't sleep well last night.", trans: "A：發生什麼事嗎？你看起來好累。 B：我昨晚沒睡好。", emoji: "❓" },
+                { word: "sore throat", kk: "[ˋsɔr ͵θrot]", pos: "n.", def: "喉嚨痛", sentence: "You should see a doctor when you have a sore throat.", trans: "當你喉嚨痛時，應該要去看醫生。", emoji: "😫" },
+                { word: "explain", kk: "[ɪkˋsplen]", pos: "v.", def: "解釋", sentence: "It's difficult for me to explain the problem clearly.", trans: "要將這問題解釋清楚，對我來說很困難。", emoji: "🗣️" },
+                { word: "cough", kk: "[kɔf]", pos: "v.; n.", def: "咳嗽", sentence: "My grandma has a bad cough. She's taking the medicine now.", trans: "我的祖母咳得很嚴重。她正在服藥。", emoji: "😷" },
+                { word: "probably", kk: "[ˋprɑbəblɪ]", pos: "adv.", def: "很可能；大概", sentence: "There's too much traffic today. I will probably be late for work.", trans: "今天交通壅塞。我可能上班會遲到。", emoji: "🤷" },
+                { word: "take care of", kk: "[͵tek ˋkɛr əv]", pos: "phr.", def: "照顧", sentence: "The nurses take good care of the mother and the baby.", trans: "護理人員們將那媽媽和嬰兒照顧得很好。", emoji: "🤱" },
+                { word: "noon", kk: "[nun]", pos: "n.", def: "中午", sentence: "My mom goes to work at night and comes back home before noon.", trans: "我媽媽晚上去上班，然後中午前回家。", emoji: "🕛" },
+                { word: "both", kk: "[boθ]", pos: "pron.", def: "兩者（都）", sentence: "I have two brothers. Both of them are on the baseball team.", trans: "我有兩個哥哥。他們兩個都在棒球隊上。", emoji: "✌️" },
+                { word: "sick", kk: "[sɪk]", pos: "adj.", def: "生病的", sentence: "I feel sick. Can you drive me to the hospital?", trans: "我覺得我生病了。你可以載我去醫院嗎？", emoji: "🤒" },
+                { word: "medicine", kk: "[ˋmɛdəsṇ]", pos: "n.", def: "藥", sentence: "Children don't like to take medicine.", trans: "小孩們不喜歡吃藥。", emoji: "💊" },
+                { word: "example", kk: "[ɪgˋzæmp!]", pos: "n.", def: "範例", sentence: "I know many of Vincent van Gogh's paintings. For example, Cafe Terrace at Night is a famous one.", trans: "我知道很多文森‧梵谷的畫作。例如，「 夜晚的露天咖啡座」就是很著名的一幅畫。", emoji: "💡" },
+                { word: "honey", kk: "[ˋhʌnɪ]", pos: "n.", def: "蜂蜜", sentence: "I would like to have some honey for my lemon tea.", trans: "我想加一些蜂蜜在我的檸檬茶裡。", emoji: "🍯" },
+                { word: "lemon", kk: "[ˋlɛmən]", pos: "n.", def: "檸檬", sentence: "Jessica stopped at a cake shop and looked at the lemon cake in the window.", trans: "潔西卡在蛋糕店前面駐足，並看著櫥窗裡的檸檬蛋糕。", emoji: "🍋" },
+                { word: "useful", kk: "[ˋjusfəl]", pos: "adj.", def: "有用的", sentence: "I got some useful books on science from my dad.", trans: "我從我的爸爸那拿到一些實用的科學書籍。", emoji: "🛠️" },
+                { word: "stand", kk: "[stænd]", pos: "n.", def: "攤位", sentence: "There's an ice cream stand in the park. It sells my favorite ice cream.", trans: "公園裡有一個冰淇淋攤位。它有賣我最愛的冰淇淋。", emoji: "🏪" },
+                { word: "feel like", kk: "[͵fil ˋlaɪk]", pos: "phr.", def: "想要", sentence: "I don't feel like cooking. Can we just go out for dinner? Can we just go out for dinner?", trans: "我今天不想要煮飯。我們晚上可以出去吃晚餐嗎？", emoji: "😋" },
+                { word: "cold", kk: "[kold]", pos: "n.", def: "感冒", sentence: "Some people catch a cold when seasons change.", trans: "季節轉變時，有些人會感冒。", emoji: "🤧" },
+                { word: "well", kk: "[wɛl]", pos: "adj.", def: "健康的", sentence: "I'm not feeling well. My stomach hurts.", trans: "我感覺不太舒服。我肚子痛。", emoji: "💪" },
+                { word: "common", kk: "[ˋkɑmən]", pos: "adj.", def: "常見的；共同的", sentence: "Forest fires are common in Australia in late January and early February.", trans: "在澳洲，一月底和二月初時森林火災是很常見的。", emoji: "🔥" },
+                { word: "comfortable", kk: "[ˋkʌmfɚtəb!]", pos: "adj.", def: "舒適的", sentence: "This pair of shoes is comfortable to wear.", trans: "這雙鞋穿起來很舒服。", emoji: "👟" },
+                { word: "actually", kk: "[ˋæktʃʊəlɪ]", pos: "adv.", def: "實際上", sentence: "Actually, Julie and I are not close friends. We don't know much about each other.", trans: "事實上，茱莉和我並不是很熟的朋友。我們並沒有很了解對方。", emoji: "☝️" },
+                { word: "helpful", kk: "[ˋhɛlpfəl]", pos: "adj.", def: "有幫助的", sentence: "Thanks for your idea. It's really helpful.", trans: "謝謝你的意見。它真的很有幫助。", emoji: "🤝" },
+                { word: "root", kk: "[rut]", pos: "n.", def: "根", sentence: "The roots of a tree can go deep into the ground.", trans: "樹根可以長到地底深處。", emoji: "🌳" },
+                { word: "reason", kk: "[ˋrizṇ]", pos: "n.", def: "原因；理由", sentence: "The woman sometimes feels sad for no reason.", trans: "那女士有時會莫名地感到悲傷。", emoji: "🤔" },
+                { word: "must", kk: "[mʌst]", pos: "n.", def: "必要的事物", sentence: "When I see a movie, popcorn is a must.", trans: "我看電影時，爆米花一定是必備的。", emoji: "🍿" },
+                { word: "under the weather", kk: "[͵ʌndɚ ðə ˋwɛðɚ]", pos: "phr.", def: "身體不舒服", sentence: "I am under the weather. I need to take a rest.", trans: "我身體不舒服。我需要休息一下。", emoji: "🌧️" },
+                { word: "treat", kk: "[trit]", pos: "v.", def: "治療", sentence: "The medicine couldn't treat her headache.", trans: "這個藥沒辦法治療她的頭痛。", emoji: "🩺" }
+                ]
+            },
+            6: {
+                title: "Unit 6: You Can Throw a Ball, Can't You?",
+                words: [
+                { word: "pass", kk: "[pæs]", pos: "v.", def: "傳遞", sentence: "Could you pass the salt, please?", trans: "能麻煩你遞鹽給我嗎？", emoji: "🫴" },
+                { word: "throw", kk: "[θro]", pos: "v.", def: "丟；投擲", sentence: "The little boy threw something out of the window.", trans: "那小男孩丟東西出窗外。", emoji: "🥎" },
+                { word: "point", kk: "[pɔɪnt]", pos: "n.", def: "得分", sentence: "David got the most points in the game.", trans: "大衛在比賽裡得到最多分。", emoji: "🔢" },
+                { word: "win", kk: "[wɪn]", pos: "v.", def: "贏；獲勝", sentence: "I believe that we'll win the game if we practice harder.", trans: "如果我們努力練習，我相信我們就能贏得比賽。", emoji: "🏆" },
+                { word: "group", kk: "[grup]", pos: "n.", def: "團體", sentence: "Lily and I work in the same group in the English club.", trans: "莉莉和我在英語社的同組工作。", emoji: "👥" },
+                { word: "grade", kk: "[gred]", pos: "n.", def: "成績", sentence: "Joe always gets good grades in science.", trans: "喬總是在科學拿高分。", emoji: "🅰️" },
+                { word: "fail", kk: "[fel]", pos: "v.", def: "考不及格；失敗", sentence: "Many of the students in my class failed math.", trans: "我班上很多學生數學不及格。", emoji: "❌" },
+                { word: "test", kk: "[tɛst]", pos: "n.", def: "考試", sentence: "Tiffany studied hard for the test.", trans: "蒂芬妮為了考試用功讀書。", emoji: "📝" },
+                { word: "afraid", kk: "[əˋfred]", pos: "adj.", def: "害怕的；擔憂的", sentence: "Rita is afraid of speaking in front of people.", trans: "瑞塔害怕在人群前說話。", emoji: "😨" },
+                { word: "smart", kk: "[smɑrt]", pos: "adj.", def: "聰明的", sentence: "Hank is really a smart guy. He does well in every subject.", trans: "漢克真的是個很聰明的人。他每一科都表現得很好。", emoji: "🧠" },
+                { word: "count... in", kk: "[kaʊnt ˋɪn]", pos: "phr.", def: "算...參加一份", sentence: "A: We plan to go to the USA for holidays. Would you like to join us? B: Sure. Count me in.", trans: "A：我們計劃去美國度假。你想加入我們嗎？ B：當然。算我一份。", emoji: "🙋" },
+                { word: "begin", kk: "[bɪˋgɪn]", pos: "v.", def: "開始", sentence: "Ted began learning English two years ago.", trans: "泰德兩年前開始學英文。", emoji: "🏁" },
+                { word: "meeting", kk: "[ˋmitɪŋ]", pos: "n.", def: "會議；會面", sentence: "We'll have a meeting with the boss this afternoon.", trans: "我們下午和老闆有個會議。", emoji: "🤝" },
+                { word: "come on", kk: "[͵kʌm ˋɑn]", pos: "phr.", def: "快點；少來了", sentence: "Come on, Sandy. Show me your work.", trans: "快點，珊蒂。給我看你的作品。", emoji: "🏃" },
+                { word: "excuse", kk: "[ɪkˋskjuz]", pos: "n.", def: "藉口；理由", sentence: "Don't make an excuse for your mistake.", trans: "不要為你的錯誤找藉口。", emoji: "🤥" },
+                { word: "around the corner", kk: "[ə͵raʊnd ðə ˋkɔrnɚ]", pos: "phr.", def: "即將來臨；在附近", sentence: "Christmas is around the corner.", trans: "聖誕節就快到來。", emoji: "🎄" },
+                { word: "hold back", kk: "[͵hold ˋbæk]", pos: "phr.", def: "阻礙", sentence: "Don't worry. I believe nothing can hold you back.", trans: "別擔心。我相信沒有事情會阻礙你。", emoji: "🚫" },
+                { word: "bring", kk: "[brɪŋ]", pos: "v.", def: "帶來；攜帶", sentence: "Did you bring anything to eat? I'm so hungry.", trans: "你有帶東西來吃嗎？我好餓。", emoji: "🥡" },
+                { word: "honest", kk: "[ˋɑnɪst]", pos: "adj.", def: "誠實的；可信的", sentence: "To be honest, the writer's new book is worse than the last one.", trans: "老實說，這作家的新書比上一本還糟。", emoji: "😇" },
+                { word: "lead to", kk: "[ˋlid tə]", pos: "phr.", def: "導致", sentence: "Eating too much fast food may lead to health problems.", trans: "吃太多速食可能會造成健康問題。", emoji: "🍔" },
+                { word: "push", kk: "[pʊʃ]", pos: "v.", def: "迫使；推動", sentence: "The boss pushed the workers to work for long hours.", trans: "老闆逼迫工人們長時間的工作。", emoji: "😤" },
+                { word: "excellent", kk: "[ˋɛks!ənt]", pos: "adj.", def: "優秀的；極佳的", sentence: "Michael Phelps is an excellent swimmer.", trans: "麥可．費爾普斯是名優秀的泳者。", emoji: "🥇" },
+                { word: "be able to", kk: "[bɪˋeb! tə]", pos: "phr.", def: "能夠", sentence: "Vivian won't be able to come today. Her mother died in the early morning.", trans: "薇薇安今天無法前來。她媽媽今早過世了。", emoji: "💪" },
+                { word: "define", kk: "[dɪˋfaɪn]", pos: "v.", def: "下定義；界定", sentence: "Don't let others define you. Just be yourself. Just be yourself.", trans: "不要讓他人界定你。做自己就好。", emoji: "📖" },
+                { word: "matter", kk: "[ˋmætɚ]", pos: "v.", def: "要緊；重要", sentence: "A: What's the matter? B: It doesn't matter now.", trans: "A：你早上想告訴我什麼？ B：不重要了。", emoji: "🤷‍♂️" },
+                { word: "picture", kk: "[ˋpɪktʃɚ]", pos: "v.", def: "想像", sentence: "Try to picture that you are in a rainforest. What do you see there?", trans: "試著想像你在雨林裡。你在那看到了什麼？", emoji: "💭" },
+                { word: "as for", kk: "[ˋæz fɚ]", pos: "phr.", def: "至於", sentence: "The food in this restaurant is good. As for the service, it's bad.", trans: "這餐廳的食物很棒。至於服務，很糟。", emoji: "👉" },
+                { word: "to the full", kk: "[tə ðə ˋfʊl]", pos: "phr.", def: "盡可能", sentence: "Life is short. You should enjoy it to the full.", trans: "人生很短暫。你應該盡情的享受它。", emoji: "🔋" }
+                ]
+            }
+        };
+
+        // 文字轉語音功能
+        const speak = (text) => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        };
+
+        // 輔助函式：產生選項
+        const generateOptionsForWord = (targetWord, fullList) => {
+            if (!targetWord || !fullList) return [];
+            const wrongOptions = fullList
+                .filter(item => item.word !== targetWord.word)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3)
+                .map(item => item.def);
             
-            // 翻回正面
-            card.classList.remove('is-flipped');
+            return [...wrongOptions, targetWord.def].sort(() => 0.5 - Math.random());
+        };
 
-            setTimeout(() => {
-                // 根據你的截圖對應欄位：
-                // A[0]=單字, B[1]=中文, C[2]=音標, D[3]=詞性, E[4]=英句, F[5]=中句
-                
-                document.getElementById('word').innerText = item[0] || "";
-                document.getElementById('definition').innerText = item[1] || "";
-                
-                // 音標 (你表格裡已經有 [] 了，所以直接顯示)
-                document.getElementById('phonetic').innerText = item[2] || "";
-                
-                // 詞性
-                document.getElementById('pos').innerText = item[3] || "";
-                
-                // 例句
-                document.getElementById('enSentence').innerText = item[4] || "";
-                document.getElementById('cnSentence').innerText = item[5] || ""; // 顯示 F 欄
+        // QuizMode Component
+        const QuizMode = ({ words }) => {
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [score, setScore] = useState(0);
+            const [showScore, setShowScore] = useState(false);
+            const [selectedOption, setSelectedOption] = useState(null);
+            const [isCorrect, setIsCorrect] = useState(null);
+            const [shuffledQuestions, setShuffledQuestions] = useState([]);
+            const [currentOptions, setCurrentOptions] = useState([]);
 
-            }, 200);
-        }
+            useEffect(() => {
+                startNewQuiz();
+            }, [words]);
 
-        function flipCard() {
-            document.getElementById('flashcard').classList.toggle('is-flipped');
-        }
+            const startNewQuiz = useCallback(() => {
+                if (!words || words.length === 0) return;
+                const shuffled = [...words].sort(() => 0.5 - Math.random());
+                setShuffledQuestions(shuffled);
+                setCurrentQuestion(0);
+                setScore(0);
+                setShowScore(false);
+                setSelectedOption(null);
+                setIsCorrect(null);
+                
+                if (shuffled.length > 0) {
+                    setCurrentOptions(generateOptionsForWord(shuffled[0], words));
+                }
+            }, [words]);
 
-        function nextCard() {
-            if (currentIndex < vocabularyList.length - 1) {
-                currentIndex++;
-                showCard(currentIndex);
-            } else {
-                alert("複習完畢！將重新開始");
-                vocabularyList = shuffle(vocabularyList);
-                currentIndex = 0;
-                showCard(currentIndex);
+            const handleAnswerClick = (option, correctWord) => {
+                if (selectedOption) return;
+
+                setSelectedOption(option);
+                const correct = option === correctWord;
+                setIsCorrect(correct);
+
+                if (correct) {
+                    setScore(prev => prev + 1);
+                    speak("Correct!");
+                } else {
+                    speak("Try again.");
+                }
+            };
+
+            const nextQuestion = () => {
+                const nextQ = currentQuestion + 1;
+                if (nextQ < shuffledQuestions.length) {
+                    setSelectedOption(null);
+                    setIsCorrect(null);
+                    setCurrentQuestion(nextQ);
+                    setCurrentOptions(generateOptionsForWord(shuffledQuestions[nextQ], words));
+                } else {
+                    setShowScore(true);
+                }
+            };
+
+            if (shuffledQuestions.length === 0) return (
+                <div className="flex justify-center items-center h-64 text-slate-500">
+                    <RotateCw className="animate-spin mr-2" /> 準備題目中...
+                </div>
+            );
+
+            const currentWord = shuffledQuestions[currentQuestion];
+            
+            if (currentOptions.length === 0 && currentWord) {
+                setCurrentOptions(generateOptionsForWord(currentWord, words));
+                return null;
             }
-        }
 
-        function prevCard() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                showCard(currentIndex);
-            }
-        }
+            return (
+                <div className="max-w-2xl mx-auto animate-fade-in">
+                    {showScore ? (
+                        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+                            <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
+                            <h2 className="text-3xl font-bold text-slate-800 mb-2">單元測驗完成！</h2>
+                            <p className="text-slate-600 mb-6">你的分數是</p>
+                            <div className="text-6xl font-black text-indigo-600 mb-6">
+                                {score} / {words.length}
+                            </div>
+                            <p className="mb-8 text-lg">
+                                {score === words.length ? "Perfect! 這個單元你已經完全掌握了！🎉" : 
+                                score > words.length * 0.8 ? "很棒喔！繼續保持！🔥" : 
+                                "再多練習幾次就會了！💪"}
+                            </p>
+                            <button 
+                                onClick={startNewQuiz}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full transition-colors flex items-center gap-2 mx-auto"
+                            >
+                                <RotateCw size={20} />
+                                重測本單元
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-10 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-2 bg-slate-100">
+                                <div 
+                                    className="h-full bg-indigo-500 transition-all duration-300"
+                                    style={{ width: `${((currentQuestion + 1) / shuffledQuestions.length) * 100}%` }}
+                                ></div>
+                            </div>
 
-        function speakWord() {
-            const word = vocabularyList[currentIndex][0];
-            const utterance = new SpeechSynthesisUtterance(word);
-            utterance.lang = 'en-US';
-            window.speechSynthesis.speak(utterance);
-        }
+                            <div className="flex justify-between items-center mb-8 mt-2">
+                                <span className="text-slate-400 font-medium">Question {currentQuestion + 1}/{shuffledQuestions.length}</span>
+                                <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold">Score: {score}</span>
+                            </div>
 
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
+                            <div className="text-center mb-10">
+                                <div className="text-6xl mb-4">{currentWord.emoji}</div>
+                                <h2 className="text-4xl font-bold text-slate-800 mb-2">{currentWord.word}</h2>
+                                <button 
+                                    onClick={() => speak(currentWord.word)}
+                                    className="inline-flex items-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-full text-sm transition-colors"
+                                >
+                                    <Volume2 size={16} /> 聽發音
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                {currentOptions.map((option, index) => {
+                                    let buttonStyle = "border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700";
+                                    
+                                    if (selectedOption) {
+                                        if (option === currentWord.def) {
+                                            buttonStyle = "border-2 border-green-500 bg-green-50 text-green-700";
+                                        } else if (option === selectedOption && option !== currentWord.def) {
+                                            buttonStyle = "border-2 border-red-500 bg-red-50 text-red-700";
+                                        } else {
+                                            buttonStyle = "border-2 border-slate-100 text-slate-300 opacity-50";
+                                        }
+                                    }
+
+                                    return (
+                                        <button
+                                            key={option}
+                                            onClick={() => handleAnswerClick(option, currentWord.def)}
+                                            disabled={!!selectedOption}
+                                            className={`p-4 rounded-xl text-lg font-medium transition-all duration-200 text-left flex justify-between items-center ${buttonStyle}`}
+                                        >
+                                            {option}
+                                            {selectedOption && option === currentWord.def && <CheckCircle className="text-green-500" />}
+                                            {selectedOption && option === selectedOption && option !== currentWord.def && <XCircle className="text-red-500" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {selectedOption && (
+                                <div className="mt-8 flex justify-center animate-bounce-in">
+                                    <button
+                                        onClick={nextQuestion}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2"
+                                    >
+                                        {currentQuestion === shuffledQuestions.length - 1 ? '查看結果' : '下一題'}
+                                        <ArrowRight size={20} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // App Component
+        const App = () => {
+            const [currentTab, setCurrentTab] = useState('study');
+            const [currentUnitId, setCurrentUnitId] = useState(3);
+            const [flippedCards, setFlippedCards] = useState({});
+
+            const currentUnitData = textbookData[currentUnitId];
+
+            useEffect(() => {
+                setFlippedCards({});
+            }, [currentUnitId]);
+
+            const toggleFlip = (index) => {
+                setFlippedCards(prev => ({
+                    ...prev,
+                    [index]: !prev[index]
+                }));
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-200 flex flex-col">
+                    
+                    <header className="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+                        <div className="max-w-6xl mx-auto px-4 py-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                                        <BookOpen className="w-8 h-8" />
+                                        國二英語單字特訓
+                                    </h1>
+                                    <p className="text-indigo-200 text-sm hidden sm:block">Current: {currentUnitData.title}</p>
+                                </div>
+                                
+                                <div className="flex bg-indigo-800 rounded-lg p-1">
+                                    <button
+                                        onClick={() => setCurrentTab('study')}
+                                        className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${currentTab === 'study' ? 'bg-white text-indigo-700 shadow-sm' : 'text-indigo-200 hover:text-white'}`}
+                                    >
+                                        <BookOpen size={18} />
+                                        <span className="font-medium hidden sm:inline ml-2">學習</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentTab('quiz')}
+                                        className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${currentTab === 'quiz' ? 'bg-white text-indigo-700 shadow-sm' : 'text-indigo-200 hover:text-white'}`}
+                                    >
+                                        <Brain size={18} />
+                                        <span className="font-medium hidden sm:inline ml-2">測驗</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                {[3, 4, 5, 6].map((unitId) => (
+                                    <button
+                                        key={unitId}
+                                        onClick={() => setCurrentUnitId(unitId)}
+                                        className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                                            currentUnitId === unitId 
+                                                ? 'bg-white text-indigo-600 border-white' 
+                                                : 'bg-indigo-700 text-indigo-100 border-indigo-600 hover:bg-indigo-500'
+                                        }`}
+                                    >
+                                        Unit {unitId}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+                        
+                        {currentTab === 'study' && (
+                            <div className="animate-fade-in">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+                                        <LayoutGrid size={24} className="text-indigo-500"/>
+                                        {currentUnitData.title}
+                                    </h2>
+                                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
+                                        {currentUnitData.words.length} Words
+                                    </span>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {currentUnitData.words.map((item, index) => (
+                                        <div 
+                                            key={`${currentUnitId}-${index}`}
+                                            className="group relative h-72 w-full perspective-1000 cursor-pointer"
+                                            onClick={() => toggleFlip(index)}
+                                        >
+                                            <div className={`relative w-full h-full duration-500 preserve-3d transition-transform shadow-xl rounded-2xl ${flippedCards[index] ? 'rotate-y-180' : ''}`}>
+                                                
+                                                {/* 正面 */}
+                                                <div className="absolute w-full h-full backface-hidden bg-white rounded-2xl p-6 flex flex-col items-center justify-center border-2 border-indigo-50 hover:border-indigo-200 transition-colors">
+                                                    <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">{item.emoji}</div>
+                                                    <h3 className="text-3xl font-bold text-slate-800 mb-1">{item.word}</h3>
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <span className="text-slate-500 font-mono text-sm bg-slate-100 px-2 py-1 rounded">{item.kk}</span>
+                                                        <span className="text-indigo-600 font-bold text-sm bg-indigo-50 px-2 py-1 rounded">{item.pos}</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            speak(item.word);
+                                                        }}
+                                                        className="mt-2 p-3 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-full transition-colors flex items-center gap-2"
+                                                        title="播放發音"
+                                                    >
+                                                        <Volume2 size={20} />
+                                                    </button>
+                                                    <p className="absolute bottom-4 text-xs text-slate-400">點擊查看意思</p>
+                                                </div>
+
+                                                {/* 背面 */}
+                                                <div className="absolute w-full h-full backface-hidden bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-2xl p-6 rotate-y-180 flex flex-col justify-center overflow-y-auto">
+                                                    <div className="text-center mb-4">
+                                                        <h4 className="text-2xl font-bold mb-1">{item.def}</h4>
+                                                    </div>
+                                                    <div className="bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+                                                        <p className="text-sm font-medium mb-2 leading-relaxed opacity-90">{item.sentence}</p>
+                                                        <p className="text-xs text-indigo-200 border-t border-indigo-400/30 pt-2">{item.trans}</p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            speak(item.sentence);
+                                                        }}
+                                                        className="mt-4 self-center p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                                                        title="朗讀例句"
+                                                    >
+                                                        <Volume2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {currentTab === 'quiz' && (
+                            <QuizMode words={currentUnitData.words} />
+                        )}
+
+                    </main>
+
+                    <footer className="text-center py-8 text-slate-400 text-sm">
+                        <p>Keep going! 每天進步一點點，你就會變得很厲害！</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
