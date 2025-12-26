@@ -5,35 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的單字練習</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4a90e2;
-            --bg-color: #f5f7fa;
-            --card-bg: #ffffff;
-            --text-color: #333;
+            --bg-color: #f3f4f6;
+            --card-front-bg: #ffffff;
+            --card-back-bg: #4338ca; /* 參考圖片的深藍紫色 */
+            --text-main: #1f2937;
+            --text-white: #ffffff;
+            --tag-gray-bg: #f3f4f6;
+            --tag-gray-text: #6b7280;
+            --tag-purple-bg: #e0e7ff;
+            --tag-purple-text: #4338ca;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
             background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px;
         }
 
-        h1 {
-            color: var(--text-color);
-            margin-bottom: 30px;
-        }
+        #loading { font-size: 1.2rem; color: #666; }
 
         .card-container {
             perspective: 1000px;
-            width: 90%;
-            max-width: 400px;
-            height: 250px;
+            width: 320px;
+            height: 480px;
             cursor: pointer;
         }
 
@@ -42,169 +45,220 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.6s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-radius: 15px;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
         }
 
-        .card.is-flipped {
-            transform: rotateY(180deg);
-        }
+        .card.is-flipped { transform: rotateY(180deg); }
 
         .card-face {
             position: absolute;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            border-radius: 15px;
-            background-color: var(--card-bg);
+            border-radius: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 30px 20px;
             box-sizing: border-box;
             text-align: center;
         }
 
-        .card-front {
-            /* 正面樣式 */
+        /* --- 正面 (白色) --- */
+        .card-front { background-color: var(--card-front-bg); }
+
+        .icon-area {
+            font-size: 80px;
+            margin-top: 20px;
         }
 
-        .card-back {
-            transform: rotateY(180deg);
-            background-color: #e8f0fe;
+        .word-main {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 10px 0;
         }
 
-        .word {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-
-        .pronunciation {
-            font-size: 1.2rem;
-            color: #666;
-            margin-top: 10px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: background 0.2s;
-        }
-        
-        .pronunciation:hover {
-            background-color: #f0f0f0;
-        }
-
-        .definition {
-            font-size: 1.5em;
-            color: #333;
-        }
-
-        .sentence {
-            margin-top: 15px;
-            font-style: italic;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .controls {
-            margin-top: 30px;
+        .tags {
             display: flex;
-            gap: 20px;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: auto;
         }
 
-        button {
-            padding: 12px 24px;
-            font-size: 1rem;
-            border: none;
+        .tag {
+            padding: 4px 10px;
             border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .tag.phonetic {
+            background-color: var(--tag-gray-bg);
+            color: var(--tag-gray-text);
+        }
+
+        .tag.pos {
+            background-color: var(--tag-purple-bg);
+            color: var(--tag-purple-text);
+        }
+
+        /* --- 背面 (深藍色) --- */
+        .card-back {
+            background-color: var(--card-back-bg);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .definition-main {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 20px;
+        }
+
+        .sentence-box {
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            text-align: left;
+            margin-top: 20px;
+            margin-bottom: auto;
+        }
+
+        .en-sentence {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .cn-sentence {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 8px;
+        }
+
+        /* --- 發音按鈕 --- */
+        .audio-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
             transition: transform 0.1s;
-            background-color: var(--primary-color);
+        }
+
+        .audio-btn.front {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .audio-btn.back {
+            background-color: rgba(255,255,255,0.2);
             color: white;
         }
 
-        button:active {
-            transform: scale(0.98);
-        }
-        
-        button.secondary {
-            background-color: #9aa0a6;
+        .audio-btn:active { transform: scale(0.95); }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 10px;
         }
 
-        #loading {
-            font-size: 1.2rem;
-            color: #666;
+        /* --- 下方切換按鈕 --- */
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-btn {
+            padding: 10px 24px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
 
-    <h1>📝 單字記憶卡</h1>
-
-    <div id="loading">正在從 Google Sheet 載入單字...</div>
+    <div id="loading">載入單字中...</div>
 
     <div class="card-container" id="cardContainer" style="display:none;" onclick="flipCard()">
         <div class="card" id="flashcard">
             <div class="card-face card-front">
-                <div class="word" id="wordDisplay">Waiting...</div>
-                <div class="pronunciation" onclick="event.stopPropagation(); speakWord()">
-                    🔊 發音
+                <div class="icon-area">🍯</div> <div class="word-main" id="word">Word</div>
+                <div class="tags">
+                    <span class="tag phonetic" id="phonetic">[]</span>
+                    <span class="tag pos" id="pos">n.</span>
+                </div>
+
+                <div style="margin-top: auto;">
+                    <button class="audio-btn front" onclick="event.stopPropagation(); speakWord()">
+                        <i class="fas fa-volume-high"></i>
+                    </button>
+                    <div class="hint">點擊查看意思</div>
                 </div>
             </div>
+
             <div class="card-face card-back">
-                <div class="definition" id="defDisplay">...</div>
-                <div class="sentence" id="sentenceDisplay"></div>
+                <div class="definition-main" id="definition">中文意思</div>
+                
+                <div class="sentence-box">
+                    <div class="en-sentence" id="enSentence">English sentence here.</div>
+                    <div class="cn-sentence" id="cnSentence">中文例句</div>
+                </div>
+
+                <button class="audio-btn back" onclick="event.stopPropagation(); speakWord()">
+                    <i class="fas fa-volume-high"></i>
+                </button>
             </div>
         </div>
     </div>
 
     <div class="controls" id="controls" style="display:none;">
-        <button class="secondary" onclick="prevCard()">上一張</button>
-        <button onclick="nextCard()">下一張</button>
+        <button class="nav-btn" style="background:white; color:#333;" onclick="prevCard()">上一張</button>
+        <button class="nav-btn" style="background:#4338ca; color:white;" onclick="nextCard()">下一張</button>
     </div>
 
     <script>
-        // 設定你的 CSV 連結
+        // 你的 Google Sheet CSV 連結 (請確認這是最新的)
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkr82Giho8k-FgUEchtyZsC-l6NeJyEMWK0DfPJCTtBpViqxU53B-ol8JfkOJVlhJRsUwpvk0ydZgU/pub?output=csv';
 
         let vocabularyList = [];
         let currentIndex = 0;
 
-        // 頁面載入時執行
-        window.onload = function() {
-            loadData();
-        };
+        window.onload = function() { loadData(); };
 
         function loadData() {
             Papa.parse(csvUrl, {
                 download: true,
-                header: false, // 假設沒有標題，如果有標題請改為 true
+                header: false,
                 complete: function(results) {
-                    // 過濾掉空行
-                    const data = results.data.filter(row => row.length > 1 && row[0] !== "");
+                    // 過濾空行
+                    const data = results.data.filter(row => row.length > 1 && row[0] !== "英文單字");
                     
-                    // 如果第一行是標題（例如：English, Chinese），可以把下面這行取消註解來移除第一行
-                    // data.shift(); 
-
                     if(data.length > 0) {
-                        vocabularyList = shuffle(data); // 隨機排序
+                        vocabularyList = shuffle(data);
                         document.getElementById('loading').style.display = 'none';
                         document.getElementById('cardContainer').style.display = 'block';
                         document.getElementById('controls').style.display = 'flex';
                         showCard(currentIndex);
                     } else {
-                        document.getElementById('loading').innerText = "讀取不到資料，請檢查 Google Sheet 設定。";
+                        document.getElementById('loading').innerText = "讀取不到資料，請檢查 Sheet 權限或連結";
                     }
-                },
-                error: function(err) {
-                    document.getElementById('loading').innerText = "載入失敗：" + err;
                 }
             });
         }
@@ -213,16 +267,26 @@
             const item = vocabularyList[index];
             const card = document.getElementById('flashcard');
             
-            // 重置翻牌狀態
+            // 翻回正面
             card.classList.remove('is-flipped');
 
-            // 稍微延遲更新內容，讓翻轉動畫更順暢
             setTimeout(() => {
-                // 假設 CSV 第一欄是英文，第二欄是中文，第三欄是例句
-                // item[0] = 英文, item[1] = 中文, item[2] = 例句
-                document.getElementById('wordDisplay').innerText = item[0] || "";
-                document.getElementById('defDisplay').innerText = item[1] || "";
-                document.getElementById('sentenceDisplay').innerText = item[2] ? item[2] : "";
+                // 根據你的截圖對應欄位：
+                // A[0]=單字, B[1]=中文, C[2]=音標, D[3]=詞性, E[4]=英句, F[5]=中句
+                
+                document.getElementById('word').innerText = item[0] || "";
+                document.getElementById('definition').innerText = item[1] || "";
+                
+                // 音標 (你表格裡已經有 [] 了，所以直接顯示)
+                document.getElementById('phonetic').innerText = item[2] || "";
+                
+                // 詞性
+                document.getElementById('pos').innerText = item[3] || "";
+                
+                // 例句
+                document.getElementById('enSentence').innerText = item[4] || "";
+                document.getElementById('cnSentence').innerText = item[5] || ""; // 顯示 F 欄
+
             }, 200);
         }
 
@@ -235,7 +299,7 @@
                 currentIndex++;
                 showCard(currentIndex);
             } else {
-                alert("恭喜！你已經複習完所有單字了！將重新開始。");
+                alert("複習完畢！將重新開始");
                 vocabularyList = shuffle(vocabularyList);
                 currentIndex = 0;
                 showCard(currentIndex);
@@ -249,26 +313,17 @@
             }
         }
 
-        // 文字轉語音 (Text-to-Speech)
         function speakWord() {
             const word = vocabularyList[currentIndex][0];
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(word);
-                utterance.lang = 'en-US'; // 設定為美式發音
-                window.speechSynthesis.speak(utterance);
-            } else {
-                alert("你的瀏覽器不支援發音功能");
-            }
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
         }
 
-        // Fisher-Yates 隨機洗牌算法
         function shuffle(array) {
-            let currentIndex = array.length, randomIndex;
-            while (currentIndex != 0) {
-                randomIndex = Math.floor(Math.random() * currentIndex);
-                currentIndex--;
-                [array[currentIndex], array[randomIndex]] = [
-                    array[randomIndex], array[currentIndex]];
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
             return array;
         }
