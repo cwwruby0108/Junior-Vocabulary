@@ -50,7 +50,36 @@
     <script type="text/babel">
         const { useState, useEffect, useCallback } = React;
 
-        // --- 內建圖示組件 (解決外部載入錯誤的問題) ---
+        // --- 核心功能函數 (移至最上方確保優先載入) ---
+        
+        // 文字轉語音功能
+        const speak = (text) => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn("Speech synthesis not supported in this browser.");
+            }
+        };
+        // 綁定到 window 以防萬一
+        window.speak = speak;
+
+        // 輔助函式：產生選項
+        const generateOptionsForWord = (targetWord, fullList) => {
+            if (!targetWord || !fullList) return [];
+            const wrongOptions = fullList
+                .filter(item => item.word !== targetWord.word)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3)
+                .map(item => item.def);
+            
+            return [...wrongOptions, targetWord.def].sort(() => 0.5 - Math.random());
+        };
+
+        // --- 內建圖示組件 ---
         const IconBase = ({ size = 24, className = "", children, ...props }) => (
             <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -146,160 +175,205 @@
             3: {
                 title: "Unit 3: The Animals Work Hard",
                 words: [
-                { word: "American", kk: "[əˋmɛrɪkən]", pos: "n.", def: "美國人", sentence: "Jack's wife is an American.", trans: "傑克的太太是美國人。", emoji: "🇺🇸" },
-                { word: "million", kk: "[ˋmɪljən]", pos: "n.", def: "百萬", sentence: "There are about 23 million people in Taiwan.", trans: "臺灣約有兩千三百萬人。", emoji: "💰" },
-                { word: "pound", kk: "[paʊnd]", pos: "n.", def: "磅 (重量單位)", sentence: "The pork is on sale this week. It costs only two dollars a pound.", trans: "本週豬肉有特價。一磅只要價兩美元。", emoji: "⚖️" },
-                { word: "pick", kk: "[pɪk]", pos: "v.", def: "採摘；撿拾", sentence: "When we climbed up the mountain, we picked some flowers along the way.", trans: "我們爬山時，一路上採花。", emoji: "🤏" },
-                { word: "bean", kk: "[bin]", pos: "n.", def: "豆", sentence: "Roast chicken with green beans is the best dish at this restaurant.", trans: "烤雞佐四季豆是這家餐館的最佳菜餚。", emoji: "🫘" },
-                { word: "cent", kk: "[sɛnt]", pos: "n.", def: "美分", sentence: "He works very hard, but he only gets 80 cents an hour.", trans: "他努力工作，但他只賺取時薪八十美分。", emoji: "💲" },
-                { word: "chance", kk: "[tʃæns]", pos: "n.", def: "機會", sentence: "These kids are poor. They don't even have a chance to go to school.", trans: "這些孩童很可憐。他們甚至沒有機會上學。", emoji: "🎲" },
-                { word: "choose", kk: "[tʃuz]", pos: "v.", def: "選擇", sentence: "Teresa chose a red dress for the Christmas party.", trans: "特瑞莎選了一件紅洋裝參加耶誕派對。", emoji: "👆" },
-                { word: "hard", kk: "[hɑrd]", pos: "adv.; adj.", def: "努力地；困難的", sentence: "Albert worked hard and made a lot of money.", trans: "亞伯特工作勤奮，賺了很多錢。", emoji: "💪" },
-                { word: "well", kk: "[wɛl]", pos: "adv.", def: "好地", sentence: "Dad is old, and he can't hear very well.", trans: "爸爸年紀大了，而且聽力不太好。", emoji: "👍" },
-                { word: "share", kk: "[ʃɛr]", pos: "v.", def: "分享", sentence: "I would like to share my stories about my days in Australia.", trans: "我想要分享我在澳洲的生活故事。", emoji: "🍰" },
-                { word: "weak", kk: "[wik]", pos: "adj.", def: "虛弱的", sentence: "He felt weak when he traveled to India for vacation.", trans: "當他到印度度假時，他感到虛弱。", emoji: "🥀" },
-                { word: "hen", kk: "[hɛn]", pos: "n.", def: "母雞", sentence: "We laughed when Jack walked like a hen.", trans: "當傑克像隻母雞般走路時，我們都笑了。", emoji: "🐔" },
-                { word: "dirty", kk: "[ˋdɝtɪ]", pos: "adj.", def: "髒的", sentence: "Our hands, feet, and clothes were dirty after we played soccer.", trans: "踢完足球後，我們的手腳和衣服都髒了。", emoji: "💩" },
-                { word: "without", kk: "[wɪˋðaʊt]", pos: "prep.", def: "沒有；無", sentence: "I left school without an umbrella, so I got wet when it rained.", trans: "我離開學校時沒帶傘，所以下雨時，我淋濕了。", emoji: "🚫" },
-                { word: "quickly", kk: "[ˋkwɪklɪ]", pos: "adv.", def: "快地", sentence: "Bob, don't eat so quickly. It's bad for your health.", trans: "鮑伯，別吃這麼快。這不利於你的健康。", emoji: "🐆" },
-                { word: "web page", kk: "[ˋwɛb ͵pedʒ]", pos: "n.", def: "網頁", sentence: "This web page looks terrible. There are too many colors.", trans: "這網頁看起來很糟。太多色彩了。", emoji: "🌐" },
-                { word: "service", kk: "[ˋsɝvɪs]", pos: "n.", def: "服務", sentence: "The hotel provides good service.", trans: "這家旅館提供良好的服務。", emoji: "💁" },
-                { word: "clearly", kk: "[ˋklɪrlɪ]", pos: "adv.", def: "清楚地", sentence: "We can see the fish in the river clearly because the water is clean.", trans: "水很乾淨，我們可以清楚地看見河裡的魚。", emoji: "👓" },
-                { word: "No problem", kk: "[noˋprɑbləm]", pos: "phr.", def: "沒問題", sentence: "A: Can you drive me to the airport later? B: Sure. No problem.", trans: "A：你待會兒可以載我到機場嗎？ B：當然可以。沒問題。", emoji: "👌" },
-                { word: "wise", kk: "[waɪz]", pos: "adj.", def: "明智的", sentence: "It is wise to think twice before you decide to do anything big.", trans: "做任何重大決定時，三思而後行是明智的。", emoji: "🦉" },
-                { word: "mean", kk: "[min]", pos: "adj.", def: "刻薄的；兇惡的", sentence: "Cinderella's sisters are mean to her.", trans: "仙杜瑞拉的姊姊們對她很壞。", emoji: "😈" },
-                { word: "make", kk: "[mek]", pos: "v.", def: "要...做...；使...", sentence: "Mom made my brother mop the floor and wipe the tables.", trans: "媽媽要我哥哥拖地和擦桌子。", emoji: "🔨" },
-                { word: "break", kk: "[brek]", pos: "n.", def: "休息", sentence: "At break, we usually share some snacks with each other.", trans: "我們常常在休息時間互相分享一些零食。", emoji: "☕" },
-                { word: "over", kk: "[ˋovɚ]", pos: "prep.", def: "超過", sentence: "Yesterday, Jerry worked over twelve hours. He looked really tired.", trans: "傑瑞昨天工作超過十二個小時。他看起來真的很疲倦。", emoji: "📈" },
-                { word: "treat", kk: "[trit]", pos: "v.", def: "對待", sentence: "Our teacher treats all the students the same.", trans: "我們老師同樣地對待所有的學生。", emoji: "🤝" },
-                { word: "take... down", kk: "[͵tek ˋdaʊn]", pos: "phr.", def: "使...垮臺；拆除", sentence: "They are going to take the old house down and build a new one.", trans: "他們打算拆除那棟老房子，並建造一棟新的。", emoji: "🏗️" },
-                { word: "have", kk: "[hæv]", pos: "v.", def: "使... (使役動詞)", sentence: "I'll have my secretary give you a call in ten minutes.", trans: "我會吩咐我的祕書十分鐘之後打電話給你。", emoji: "🗣️" },
+                    { word: "hard", kk: "[hɑrd]", pos: "adv.; adj.", def: "努力地；困難的", sentence: "He works hard to provide for his family.", trans: "他努力工作以供養家庭。", emoji: "💪" },
+                    { word: "well", kk: "[wɛl]", pos: "adv.", def: "好地", sentence: "She plays the piano very well.", trans: "她鋼琴彈得非常好。", emoji: "👍" },
+                    { word: "share", kk: "[ʃɛr]", pos: "v.", def: "分享", sentence: "It's important to share your toys with others.", trans: "與他人分享你的玩具是很重要的。", emoji: "🤝" },
+                    { word: "weak", kk: "[wik]", pos: "adj.", def: "虛弱的", sentence: "He felt weak after having the flu.", trans: "感冒後他覺得身體很虛弱。", emoji: "🤒" },
+                    { word: "hen", kk: "[hɛn]", pos: "n.", def: "母雞", sentence: "The hen is laying an egg in the nest.", trans: "母雞正在窩裡下蛋。", emoji: "🐔" },
+                    { word: "dirty", kk: "[ˋdɝtɪ]", pos: "adj.", def: "髒的", sentence: "Don't sit on the dirty floor.", trans: "別坐在髒地板上。", emoji: "🤢" },
+                    { word: "without", kk: "[wɪˋðaut]", pos: "prep.", def: "沒有；無", sentence: "You shouldn't leave without saying goodbye.", trans: "你不該不告而別。", emoji: "🚫" },
+                    { word: "quickly", kk: "[ˋkwɪklɪ]", pos: "adv.", def: "快地", sentence: "Please finish your dinner quickly.", trans: "請趕快吃完你的晚餐。", emoji: "🏃" },
+                    { word: "web page", kk: "[ˋwɛb ˌpedʒ]", pos: "n.", def: "網頁", sentence: "I am looking at a web page about travel.", trans: "我正在看一個關於旅遊的網頁。", emoji: "🌐" },
+                    { word: "service", kk: "[ˋsɝvɪs]", pos: "n.", def: "服務", sentence: "The service in this restaurant is excellent.", trans: "這家餐廳的服務非常好。", emoji: "💁" },
+                    { word: "clearly", kk: "[ˋklɪrlɪ]", pos: "adv.", def: "清楚地", sentence: "Can you hear me clearly?", trans: "你能聽清楚我的聲音嗎？", emoji: "🔊" },
+                    { word: "No problem", kk: "[no ˋprɑbləm]", pos: "phr.", def: "沒問題", sentence: "\"Thanks for the help.\" \" No problem! \"", trans: "「謝謝你的幫忙。」「沒問題！」", emoji: "👌" },
+                    { word: "wise", kk: "[waɪz]", pos: "adj.", def: "明智的", sentence: "It was a wise decision to save money.", trans: "存錢是一個明智的決定。", emoji: "🦉" },
+                    { word: "goose", kk: "[ɡus]", pos: "n.", def: "鵝 (複數 geese)", sentence: "A goose is swimming in the pond.", trans: "一隻鵝正在池塘裡游泳。", emoji: "🪿" },
+                    { word: "duck", kk: "[dʌk]", pos: "n.", def: "鴨", sentence: "The little duck followed its mother.", trans: "小鴨跟著牠的媽媽。", emoji: "🦆" },
+                    { word: "loudly", kk: "[ˋlaʊdlɪ]", pos: "adv.", def: "大聲地", sentence: "Don't talk so loudly in the library.", trans: "在圖書館裡不要這麼大聲說話。", emoji: "📢" },
+                    { word: "goat", kk: "[ɡot]", pos: "n.", def: "山羊", sentence: "The goat is eating grass on the hill.", trans: "山羊正在山上吃草。", emoji: "🐐" },
+                    { word: "papaya", kk: "[pəˋpaɪə]", pos: "n.", def: "木瓜", sentence: "Papaya is a very healthy fruit.", trans: "木瓜是種非常健康的水果。", emoji: "🍈" },
+                    { word: "watermelon", kk: "[ˋwɔtɚˌmɛlən]", pos: "n.", def: "西瓜", sentence: "Eating watermelon is great in summer.", trans: "夏天吃西瓜很棒。", emoji: "🍉" },
+                    { word: "guava", kk: "[ˋɡwɑvə]", pos: "n.", def: "芭樂", sentence: "Taiwan is famous for its sweet guava.", trans: "台灣以甜美的芭樂聞名。", emoji: "🍐" },
+                    { word: "pear", kk: "[pɛr]", pos: "n.", def: "梨子", sentence: "This pear is very juicy and sweet.", trans: "這顆梨子多汁又甜。", emoji: "🍐" },
+                    { word: "tomato", kk: "[təˋmeto]", pos: "n.", def: "番茄", sentence: "Do you like tomato sauce on your pasta?", trans: "你喜歡在義大利麵上加番茄醬嗎？", emoji: "🍅" },
+                    { word: "peach", kk: "[pitʃ]", pos: "n.", def: "桃子", sentence: "She bought a basket of fresh peaches.", trans: "她買了一籃新鮮的桃子。", emoji: "🍑" },
+                    { word: "grape", kk: "[ɡrep]", pos: "n.", def: "葡萄", sentence: "He popped a grape into his mouth.", trans: "他把一顆葡萄丟進嘴裡。", emoji: "🍇" },
+                    { word: "turtle", kk: "[ˋtɝt!]", pos: "n.", def: "烏龜", sentence: "The turtle moves very slowly.", trans: "烏龜移動得很慢。", emoji: "🐢" },
+                    { word: "vegetable", kk: "[ˋvɛdʒətəb!]", pos: "n.", def: "蔬菜", sentence: "You should eat more green vegetables.", trans: "你應該多吃綠色蔬菜。", emoji: "🥬" },
+                    { word: "strawberry", kk: "[ˋstrɔˌbɛrɪ]", pos: "n.", def: "草莓", sentence: "I love eating strawberry cake.", trans: "我愛吃草莓蛋糕。", emoji: "🍓" },
+                    { word: "slowly", kk: "[ˋsloʊlɪ]", pos: "adv.", def: "慢地", sentence: "Please speak more slowly.", trans: "請說慢一點。", emoji: "🐌" },
+                    { word: "American", kk: "[əˋmɛrɪkən]", pos: "n.", def: "美國人", sentence: "My English teacher is an American.", trans: "我的英文老師是美國人。", emoji: "🇺🇸" },
+                    { word: "million", kk: "[ˋmɪljən]", pos: "n.", def: "百萬", sentence: "There are over twenty million people in Taiwan.", trans: "台灣有超過兩千萬人。", emoji: "💰" },
+                    { word: "pound", kk: "[paʊnd]", pos: "n.", def: "磅", sentence: "I need two pounds of apples, please.", trans: "請給我兩磅蘋果。", emoji: "⚖️" },
+                    { word: "pick", kk: "[pɪk]", pos: "v.", def: "採摘；撿拾", sentence: "Let's go to the farm to pick strawberries.", trans: "我們去農場採草莓吧。", emoji: "🤏" },
+                    { word: "bean", kk: "[bin]", pos: "n.", def: "豆", sentence: "Green beans are good for your health.", trans: "綠豆對你的健康有益。 ", emoji: "🫛" },
+                    { word: "cent", kk: "[sɛnt]", pos: "n.", def: "美分", sentence: "The candy costs fifty cents.", trans: "這糖果要五十美分。", emoji: "🪙" },
+                    { word: "chance", kk: "[tʃæns]", pos: "n.", def: "機會", sentence: "Give him a chance to explain.", trans: "給他一個解釋的機會。", emoji: "🎲" },
+                    { word: "choose", kk: "[tʃuz]", pos: "v.", def: "選擇", sentence: "You can choose any book you like.", trans: "你可以選擇任何你喜歡的書。", emoji: "👆" },
+                    { word: "mean", kk: "[min]", pos: "adj.", def: "刻薄的；兇惡的", sentence: "Don't be so mean to your little brother.", trans: "別對你弟弟那麼刻薄。", emoji: "👿" },
+                    { word: "make", kk: "[mek]", pos: "v.", def: "要...做...；使...", sentence: "Sad movies always make me cry.", trans: "悲傷的電影總是讓我哭。", emoji: "🔨" },
+                    { word: "break", kk: "[brek]", pos: "n.", def: "休息", sentence: "Let's take a ten-minute break.", trans: "我們休息十分鐘吧。", emoji: "☕" },
+                    { word: "over", kk: "[ˋovɚ]", pos: "prep.", def: "超過", sentence: "The meeting lasted over two hours.", trans: "會議持續了超過兩小時。", emoji: "📈" },
+                    { word: "treat", kk: "[trit]", pos: "v.", def: "對待", sentence: "You should treat others with respect.", trans: "你應該尊重地對待他人。", emoji: "🤝" },
+                    { word: "take... down", kk: "[tek daʊn]", pos: "phr.", def: "使某人垮台；拆除", sentence: "The workers took down the old building.", trans: "工人們拆除了那棟舊建築。", emoji: "🏗️" },
+                    { word: "have", kk: "[hæv]", pos: "v.", def: "使...", sentence: "I will have the waiter bring you some water.", trans: "我會請服務生幫你拿些水。", emoji: "🗣️" },
+                    { word: "owner", kk: "[ˋonɚ]", pos: "n.", def: "擁有人；主人", sentence: "Who is the owner of this blue car?", trans: "這輛藍色車子的主人是誰？", emoji: "🔑" },
+                    { word: "produce", kk: "[prəˋdjus]", pos: "v.", def: "生產；製造", sentence: "The local farmers produce fresh milk every day.", trans: "當地的農民每天生產新鮮的牛奶。", emoji: "🏭" },
+                    { word: "law", kk: "[lɔ]", pos: "n.", def: "法律", sentence: "We must follow the law to keep our city safe.", trans: "我們必須遵守法律以保持城市的安全。", emoji: "⚖️" },
+                    { word: "labor", kk: "[ˋlebɚ]", pos: "n.", def: "勞工；勞動", sentence: "Child labor is a serious problem in some countries.", trans: "童工在某些國家是一個嚴重的問題。", emoji: "👷" },
+                    { word: "improve", kk: "[ɪmˋpruv]", pos: "v.", def: "改善；進步", sentence: "I want to improve my English speaking skills.", trans: "我想改善我的英文口說能力。", emoji: "📈" },
+                    { word: "information", kk: "[ˌɪnfɚˋmeʃən]", pos: "n.", def: "資訊；消息", sentence: "You can find more information on our website.", trans: "你可以在我們的網站上找到更多資訊。", emoji: "ℹ️" },
+                    { word: "cocoa", kk: "[ˋkoko]", pos: "n.", def: "可可", sentence: "A cup of hot cocoa is perfect for a cold winter night.", trans: "在寒冷的冬夜，一杯熱可可是最棒的。", emoji: "☕" },
+                    { word: "alone", kk: "[əˋlon]", pos: "adv.; adj.", def: "獨自地；單獨的", sentence: "She likes to go to the movies alone.", trans: "她喜歡一個人去看電影。", emoji: "🧍" },
+                    { word: "bitter", kk: "[ˋbɪtɚ]", pos: "adj.", def: "苦的；苦澀的", sentence: "The medicine tastes very bitter, but it will help you.", trans: "這藥吃起來很苦，但對你有幫助。", emoji: "😖" }
                 ]
             },
             4: {
                 title: "Unit 4: I Can Hear the Wind Blow",
                 words: [
-                { word: "typhoon", kk: "[taɪˋfun]", pos: "n.", def: "颱風", sentence: "The typhoon season falls between July and September in Taiwan.", trans: "七月到九月在臺灣是颱風季節。", emoji: "🌀" },
-                { word: "rose", kk: "[roz]", pos: "n.", def: "玫瑰花", sentence: "On Valentine's Day, Judy's husband gave her a red rose and a card.", trans: "情人節那天，茱蒂的先生給了她一朵紅玫瑰和一張卡片。", emoji: "🌹" },
-                { word: "balcony", kk: "[ˋbælkənɪ]", pos: "n.", def: "陽台", sentence: "She is hanging the clothes on the balcony.", trans: "她正在把衣服晾在陽臺上。", emoji: "🏙️" },
-                { word: "must", kk: "[mʌst]", pos: "aux.", def: "必須；一定", sentence: "For your own safety, you must follow the rules when driving.", trans: "為了你自身的安全，你在開車時必須遵守規則。", emoji: "⚠️" },
-                { word: "prepare", kk: "[prɪˋpɛr]", pos: "v.", def: "準備", sentence: "She is preparing sandwiches, hamburgers, and orange juice for the picnic.", trans: "她正在為野餐準備三明治、漢堡和柳橙汁。", emoji: "🎒" },
-                { word: "should", kk: "[ʃʊd]", pos: "aux.", def: "應該", sentence: "You should wash your hands before you eat.", trans: "吃東西之前你應該要洗手。", emoji: "☝️" },
-                { word: "candle", kk: "[ˋkænd!]", pos: "n.", def: "蠟燭", sentence: "The wind is really strong. It blows out the candle.", trans: "風真的很大。它吹滅了蠟燭。", emoji: "🕯️" },
-                { word: "light", kk: "[laɪt]", pos: "n.; v.", def: "燈；光；點亮", sentence: "It's too dark here. Can you turn on the lights?", trans: "這裡太暗了。你可以開燈嗎？", emoji: "🔦" },
-                { word: "myself", kk: "[maɪˋsɛlf]", pos: "pron.", def: "我自己", sentence: "A: Who made this delicious cake? B: I made it by myself.", trans: "A：這個美味的蛋糕是誰做的？ B：我自己做的。", emoji: "🙋" },
-                { word: "yourself", kk: "[jʊrˋsɛlf]", pos: "pron.", def: "你自己", sentence: "Did you finish your math homework by yourself?", trans: "你自己完成數學作業了嗎？", emoji: "🫵" },
-                { word: "radio", kk: "[ˋredɪ͵o]", pos: "n.", def: "收音機；廣播", sentence: "I sat in my car and turned on the radio.", trans: "我坐在車裡，並打開收音機。", emoji: "📻" },
-                { word: "news", kk: "[njuz]", pos: "n.", def: "新聞；消息", sentence: "There was news on the big earthquake last night.", trans: "有關於昨晚大地震的消息。", emoji: "📰" },
-                { word: "if", kk: "[ɪf]", pos: "conj.", def: "如果", sentence: "If you come home late, I'll have dinner by myself.", trans: "如果你很晚回家，我就自己一個人吃晚餐。", emoji: "🤔" },
-                { word: "or", kk: "[ɔr]", pos: "conj.", def: "否則", sentence: "We should leave now, or we'll be late for the movie.", trans: "我們現在應該要離開了，否則我們看電影會遲到。", emoji: "🚪" },
-                { word: "have to", kk: "[ˋhæv tə]", pos: "phr.", def: "必須", sentence: "Before the typhoon comes, we have to prepare enough food and save water.", trans: "在颱風來臨之前，我們必須準備足夠的食物並儲水。", emoji: "📋" },
-                { word: "go out", kk: "[͵go ˋaʊt]", pos: "phr.", def: "熄滅", sentence: "The fire finally went out with the help of the rescue team.", trans: "在救援隊的幫助下，大火終於熄滅了。", emoji: "🧯" },
-                { word: "train", kk: "[tren]", pos: "v.", def: "訓練", sentence: "She trained hard to be a successful basketball player.", trans: "她努力訓練成為一名成功的籃球員。", emoji: "🏋️" },
-                { word: "face", kk: "[fes]", pos: "v.", def: "面對", sentence: "Ron, you have to face the fear of spiders.", trans: "榮恩，你必須面對你對蜘蛛的恐懼。", emoji: "😨" },
-                { word: "try one's best", kk: "[ˋtraɪ wʌnz ˋbɛst]", pos: "phr.", def: "盡力而為", sentence: "The doctor tried her best to save the dying man.", trans: "這位醫生盡全力挽救那位垂死的男士。", emoji: "🔥" },
-                { word: "turn on", kk: "[͵tɝn ˋɑn]", pos: "phr.", def: "打開（電源）", sentence: "The boy turned on the TV right after he got back home.", trans: "男孩一回到家後馬上就打開了電視。", emoji: "📺" },
-                { word: "latest", kk: "[ˋletɪst]", pos: "adj.", def: "最新的", sentence: "The reporter is reporting the latest news on TV.", trans: "這位記者正在電視上報導最新的消息。", emoji: "🆕" },
-                { word: "as", kk: "[æz]", pos: "prep.", def: "作為；如同", sentence: "Danny's father works as a taxi driver.", trans: "丹尼的父親是位計程車司機。", emoji: "🚕" },
-                { word: "earthquake", kk: "[ˋɝθ͵kwek]", pos: "n.", def: "地震", sentence: "The big earthquake killed many people.", trans: "大地震使許多人喪生。", emoji: "🏚️" },
-                { word: "bravely", kk: "[ˋbrevlɪ]", pos: "adv.", def: "勇敢地", sentence: "The soldiers fight bravely for their country.", trans: "軍人們為自己的國家英勇奮戰。", emoji: "⚔️" },
-                { word: "through", kk: "[θru]", pos: "prep.", def: "穿越", sentence: "It's dangerous to walk through a rainforest in the dark.", trans: "在黑暗中徒步穿越雨林很危險。", emoji: "🌲" },
-                { word: "sharp", kk: "[ʃɑrp]", pos: "adj.", def: "尖銳的", sentence: "Be careful of the sharp knife. You may get hurt.", trans: "要小心這把鋒利的刀子。你可能會受傷。", emoji: "🔪" },
-                { word: "reach", kk: "[ritʃ]", pos: "v.", def: "到達", sentence: "They climbed up the mountain and reached the top.", trans: "他們爬上山，到達山頂。", emoji: "🏁" },
-                { word: "space", kk: "[spes]", pos: "n.", def: "空間", sentence: "The concert was full of people. There was no space for more.", trans: "這個音樂會充滿了人。沒有空間容納更多人了。", emoji: "🚀" },
-                { word: "size", kk: "[saɪz]", pos: "n.", def: "大小；尺寸", sentence: "We wore the same size T-shirt.", trans: "我們穿著相同尺寸的T恤。", emoji: "👕" },
-                { word: "times", kk: "[taɪmz]", pos: "n.", def: "倍", sentence: "Ms. Johnson makes five times more money than Mr. Johnson.", trans: "強森太太賺的錢是強生先生的五倍多。", emoji: "✖️" }
+                    { word: "typhoon", kk: "[taɪ`fʊn]", pos: "n.", def: "颱風", sentence: "A strong typhoon is coming this weekend.", trans: "一個強烈的颱風這個週末即將來襲。", emoji: "🌀" },
+                    { word: "blow", kk: "[blo]", pos: "v.", def: "吹", sentence: "The wind is blowing hard outside.", trans: "外面正吹著強風。", emoji: "🌬️" },
+                    { word: "rose", kk: "[roz]", pos: "n.", def: "玫瑰花", sentence: "He gave his girlfriend a red rose.", trans: "他送給他的女朋友一朵紅玫瑰。", emoji: "🌹" },
+                    { word: "balcony", kk: "[`bælkənɪ]", pos: "n.", def: "陽台", sentence: "My father is smoking on the balcony.", trans: "我爸爸正在陽台上抽菸。", emoji: "🏙️" },
+                    { word: "must", kk: "[mʌst]", pos: "aux.", def: "必須；一定", sentence: "You must finish your homework before dinner.", trans: "你必須在晚餐前完成你的家庭作業。", emoji: "⚠️" },
+                    { word: "prepare", kk: "[prɪ`pɛr]", pos: "v.", def: "準備", sentence: "Mom is preparing breakfast in the kitchen.", trans: "媽媽正在廚房準備早餐。", emoji: "🍳" },
+                    { word: "should", kk: "[ʃʊd]", pos: "aux.", def: "應該", sentence: "You should see a doctor if you are sick.", trans: "如果你生病了，你應該去看醫生。", emoji: "☝️" },
+                    { word: "candle", kk: "[`kænd!]", pos: "n.", def: "蠟燭", sentence: "She blew out the candles on her birthday cake.", trans: "她吹熄了生日蛋糕上的蠟燭。", emoji: "🕯️" },
+                    { word: "light", kk: "[laɪt]", pos: "n.; v.", def: "燈；光；點亮", sentence: "Please turn on the light; it’s getting dark.", trans: "天黑了，請把燈打開。", emoji: "💡" },
+                    { word: "radio", kk: "[`redɪ,o]", pos: "n.", def: "收音機；廣播", sentence: "My grandfather listens to the radio every morning.", trans: "我的祖父每天早上都聽收音機。", emoji: "📻" },
+                    { word: "news", kk: "[njuz]", pos: "n.", def: "新聞；消息", sentence: "I have good news for you.", trans: "我有好消息要告訴你。", emoji: "📰" },
+                    { word: "if", kk: "[ɪf]", pos: "conj.", def: "如果", sentence: "If it rains tomorrow, we will stay home.", trans: "如果明天下雨，我們就會待在家裡。", emoji: "🤔" },
+                    { word: "star", kk: "[stɑr]", pos: "n.", def: "星星", sentence: "Look at the bright stars in the sky.", trans: "看天空中那些明亮的星星。", emoji: "⭐" },
+                    { word: "shine", kk: "[ʃaɪn]", pos: "v.", def: "閃耀；照耀", sentence: "The sun shines brightly today.", trans: "今天太陽照耀得很明亮。", emoji: "✨" },
+                    { word: "giant", kk: "[`dʒaɪənt]", pos: "adj.", def: "巨大的", sentence: "They saw a giant panda in the zoo.", trans: "他們在動物園看到了一隻巨大的熊貓。", emoji: "🐘" },
+                    { word: "rainbow", kk: "[`ren,bo]", pos: "n.", def: "彩虹", sentence: "There is a rainbow over the mountains.", trans: "山的那頭有一道彩虹。", emoji: "🌈" },
+                    { word: "pretty", kk: "[`prɪtɪ]", pos: "adj.", def: "漂亮的", sentence: "She is wearing a pretty dress.", trans: "她穿著一件漂亮的洋裝。", emoji: "👗" },
+                    { word: "garden", kk: "[`gɑrdn]", pos: "n.", def: "花園", sentence: "Grandma grows vegetables in the garden.", trans: "奶奶在花園裡種菜。", emoji: "🏡" },
+                    { word: "frog", kk: "[frɑg]", pos: "n.", def: "青蛙", sentence: "The frog jumped into the pond.", trans: "青蛙跳進了池塘裡。", emoji: "🐸" },
+                    { word: "noise", kk: "[nɔɪz]", pos: "n.", def: "聲響；噪音", sentence: "Don’t make so much noise in the library.", trans: "不要在圖書館製造這麼多噪音。", emoji: "🔊" },
+                    { word: "pond", kk: "[pɑnd]", pos: "n.", def: "池塘", sentence: "There are many fish in the pond.", trans: "池塘裡有很多魚。", emoji: "⛲" },
+                    { word: "earthquake", kk: "[`ɝθ,kwek]", pos: "n.", def: "地震", sentence: "Did you feel the earthquake last night?", trans: "你有感覺到昨晚的地震嗎？", emoji: "🏚️" },
+                    { word: "bravely", kk: "[`brevlı]", pos: "adv.", def: "勇敢地", sentence: "The soldier fought bravely in the war.", trans: "那位士兵在戰爭中英勇地戰鬥。", emoji: "🦸" },
+                    { word: "through", kk: "[θru]", pos: "prep.", def: "穿越", sentence: "The train went through a tunnel.", trans: "火車穿越了隧道。", emoji: "🚇" },
+                    { word: "sharp", kk: "[ʃɑrp]", pos: "adj.", def: "尖銳的", sentence: "Be careful with that sharp knife.", trans: "小心那把鋒利的刀子。", emoji: "🔪" },
+                    { word: "reach", kk: "[ritʃ]", pos: "v.", def: "到達", sentence: "We will reach the top of the mountain soon.", trans: "我們很快就會到達山頂。", emoji: "🏁" },
+                    { word: "space", kk: "[spes]", pos: "n.", def: "空間", sentence: "There is no space for a new table in my room.", trans: "我的房間沒有空間放新桌子了。", emoji: "🚀" },
+                    { word: "size", kk: "[saɪz]", pos: "n.", def: "大小；尺寸", sentence: "What size shoes do you wear?", trans: "你穿幾號(什麼尺寸)的鞋子？", emoji: "📏" },
+                    { word: "or", kk: "[ɔr]", pos: "conj.", def: "否則", sentence: "Hurry up, or you will be late for school.", trans: "快一點，否則你上學會遲到。", emoji: "🤷" },
+                    { word: "have to", kk: "[`hæv tu]", pos: "phr.", def: "必須", sentence: "I have to go now.", trans: "我現在必須走了。", emoji: "📋" },
+                    { word: "go out", kk: "[,go `aʊt]", pos: "phr.", def: "熄滅", sentence: "The lights went out during the storm.", trans: "暴風雨期間燈熄滅了。", emoji: "🧯" },
+                    { word: "train", kk: "[tren]", pos: "v.", def: "訓練", sentence: "He trains hard every day for the game.", trans: "為了比賽，他每天都很努力訓練。", emoji: "🏋️" },
+                    { word: "face", kk: "[fes]", pos: "v.", def: "面對", sentence: "You must face your problems.", trans: "你必須面對你的問題。", emoji: "🦁" },
+                    { word: "try one's best", kk: "[traɪ wʌnz bɛst]", pos: "phr.", def: "盡力而為", sentence: "I will try my best to pass the exam.", trans: "我會盡力通過考試。", emoji: "🔥" },
+                    { word: "turn on", kk: "[,tɝn `ɑn]", pos: "phr.", def: "打開 (電源)", sentence: "Please turn on the TV.", trans: "請打開電視。", emoji: "📺" },
+                    { word: "latest", kk: "[`letɪst]", pos: "adj.", def: "最新的", sentence: "This is the latest model of the phone.", trans: "這是這款手機最新的型號。", emoji: "🆕" },
+                    { word: "as", kk: "[æz]", pos: "prep.", def: "作為；如同", sentence: "He works as a teacher.", trans: "他作為一名老師工作 (他的職業是老師)。", emoji: "👨‍🏫" },
+                    { word: "times", kk: "[taɪmz]", pos: "n.", def: "倍", sentence: "This box is three times bigger than that one.", trans: "這個箱子比那個大三倍。", emoji: "✖️" },
+                    { word: "sway", kk: "[swe]", pos: "v.", def: "搖擺", sentence: "The trees swayed in the wind.", trans: "樹木在風中搖擺。", emoji: "🎋" },
+                    { word: "flashlight", kk: "[`flæʃ,laɪt]", pos: "n.", def: "手電筒", sentence: "It was dark, so we used a flashlight.", trans: "天很黑，所以我們用了手電筒。", emoji: "🔦" },
+                    { word: "fear", kk: "[fɪr]", pos: "n.", def: "恐懼", sentence: "She has a fear of snakes.", trans: "她對蛇有恐懼感。", emoji: "😱" },
+                    { word: "rescue", kk: "[`rɛskju]", pos: "n./v.", def: "救援", sentence: "The firefighters came to rescue the cat.", trans: "消防員來救援那隻貓。", emoji: "🚒" },
+                    { word: "rubble", kk: "[`rʌb!]", pos: "n.", def: "瓦礫；碎石", sentence: "The building was reduced to rubble after the earthquake.", trans: "地震後，那棟建築物變成了一堆瓦礫。", emoji: "🧱" },
+                    { word: "sense", kk: "[sɛns]", pos: "n.", def: "感官", sentence: "Dogs have a good sense of smell.", trans: "狗有很好的嗅覺。", emoji: "👃" },
+                    { word: "survivor", kk: "[sɚ`vaɪvɚ]", pos: "n.", def: "生還者", sentence: "They found a survivor in the forest.", trans: "他們在森林裡發現了一名生還者。", emoji: "🆘" }
                 ]
             },
             5: {
                 title: "Unit 5: All of the Food Stands Look Great",
                 words: [
-                { word: "although", kk: "[ɔlˋðo]", pos: "conj.", def: "雖然", sentence: "Although Mr. Mills doesn't feel good, he still came to work today.", trans: "雖然米爾斯先生不太舒服，他今天仍然來上班。", emoji: "🤨" },
-                { word: "matter", kk: "[ˋmætɚ]", pos: "n.", def: "問題；事件", sentence: "A: What's the matter? You look tired. B: I didn't sleep well last night.", trans: "A：發生什麼事嗎？你看起來好累。 B：我昨晚沒睡好。", emoji: "❓" },
-                { word: "sore throat", kk: "[ˋsɔr ͵θrot]", pos: "n.", def: "喉嚨痛", sentence: "You should see a doctor when you have a sore throat.", trans: "當你喉嚨痛時，應該要去看醫生。", emoji: "😫" },
-                { word: "explain", kk: "[ɪkˋsplen]", pos: "v.", def: "解釋", sentence: "It's difficult for me to explain the problem clearly.", trans: "要將這問題解釋清楚，對我來說很困難。", emoji: "🗣️" },
-                { word: "cough", kk: "[kɔf]", pos: "v.; n.", def: "咳嗽", sentence: "My grandma has a bad cough. She's taking the medicine now.", trans: "我的祖母咳得很嚴重。她正在服藥。", emoji: "😷" },
-                { word: "probably", kk: "[ˋprɑbəblɪ]", pos: "adv.", def: "很可能；大概", sentence: "There's too much traffic today. I will probably be late for work.", trans: "今天交通壅塞。我可能上班會遲到。", emoji: "🤷" },
-                { word: "take care of", kk: "[͵tek ˋkɛr əv]", pos: "phr.", def: "照顧", sentence: "The nurses take good care of the mother and the baby.", trans: "護理人員們將那媽媽和嬰兒照顧得很好。", emoji: "🤱" },
-                { word: "noon", kk: "[nun]", pos: "n.", def: "中午", sentence: "My mom goes to work at night and comes back home before noon.", trans: "我媽媽晚上去上班，然後中午前回家。", emoji: "🕛" },
-                { word: "both", kk: "[boθ]", pos: "pron.", def: "兩者（都）", sentence: "I have two brothers. Both of them are on the baseball team.", trans: "我有兩個哥哥。他們兩個都在棒球隊上。", emoji: "✌️" },
-                { word: "sick", kk: "[sɪk]", pos: "adj.", def: "生病的", sentence: "I feel sick. Can you drive me to the hospital?", trans: "我覺得我生病了。你可以載我去醫院嗎？", emoji: "🤒" },
-                { word: "medicine", kk: "[ˋmɛdəsṇ]", pos: "n.", def: "藥", sentence: "Children don't like to take medicine.", trans: "小孩們不喜歡吃藥。", emoji: "💊" },
-                { word: "example", kk: "[ɪgˋzæmp!]", pos: "n.", def: "範例", sentence: "I know many of Vincent van Gogh's paintings. For example, Cafe Terrace at Night is a famous one.", trans: "我知道很多文森‧梵谷的畫作。例如，「 夜晚的露天咖啡座」就是很著名的一幅畫。", emoji: "💡" },
-                { word: "honey", kk: "[ˋhʌnɪ]", pos: "n.", def: "蜂蜜", sentence: "I would like to have some honey for my lemon tea.", trans: "我想加一些蜂蜜在我的檸檬茶裡。", emoji: "🍯" },
-                { word: "lemon", kk: "[ˋlɛmən]", pos: "n.", def: "檸檬", sentence: "Jessica stopped at a cake shop and looked at the lemon cake in the window.", trans: "潔西卡在蛋糕店前面駐足，並看著櫥窗裡的檸檬蛋糕。", emoji: "🍋" },
-                { word: "useful", kk: "[ˋjusfəl]", pos: "adj.", def: "有用的", sentence: "I got some useful books on science from my dad.", trans: "我從我的爸爸那拿到一些實用的科學書籍。", emoji: "🛠️" },
-                { word: "stand", kk: "[stænd]", pos: "n.", def: "攤位", sentence: "There's an ice cream stand in the park. It sells my favorite ice cream.", trans: "公園裡有一個冰淇淋攤位。它有賣我最愛的冰淇淋。", emoji: "🏪" },
-                { word: "feel like", kk: "[͵fil ˋlaɪk]", pos: "phr.", def: "想要", sentence: "I don't feel like cooking. Can we just go out for dinner? Can we just go out for dinner?", trans: "我今天不想要煮飯。我們晚上可以出去吃晚餐嗎？", emoji: "😋" },
-                { word: "cold", kk: "[kold]", pos: "n.", def: "感冒", sentence: "Some people catch a cold when seasons change.", trans: "季節轉變時，有些人會感冒。", emoji: "🤧" },
-                { word: "well", kk: "[wɛl]", pos: "adj.", def: "健康的", sentence: "I'm not feeling well. My stomach hurts.", trans: "我感覺不太舒服。我肚子痛。", emoji: "💪" },
-                { word: "common", kk: "[ˋkɑmən]", pos: "adj.", def: "常見的；共同的", sentence: "Forest fires are common in Australia in late January and early February.", trans: "在澳洲，一月底和二月初時森林火災是很常見的。", emoji: "🔥" },
-                { word: "comfortable", kk: "[ˋkʌmfɚtəb!]", pos: "adj.", def: "舒適的", sentence: "This pair of shoes is comfortable to wear.", trans: "這雙鞋穿起來很舒服。", emoji: "👟" },
-                { word: "actually", kk: "[ˋæktʃʊəlɪ]", pos: "adv.", def: "實際上", sentence: "Actually, Julie and I are not close friends. We don't know much about each other.", trans: "事實上，茱莉和我並不是很熟的朋友。我們並沒有很了解對方。", emoji: "☝️" },
-                { word: "helpful", kk: "[ˋhɛlpfəl]", pos: "adj.", def: "有幫助的", sentence: "Thanks for your idea. It's really helpful.", trans: "謝謝你的意見。它真的很有幫助。", emoji: "🤝" },
-                { word: "root", kk: "[rut]", pos: "n.", def: "根", sentence: "The roots of a tree can go deep into the ground.", trans: "樹根可以長到地底深處。", emoji: "🌳" },
-                { word: "reason", kk: "[ˋrizṇ]", pos: "n.", def: "原因；理由", sentence: "The woman sometimes feels sad for no reason.", trans: "那女士有時會莫名地感到悲傷。", emoji: "🤔" },
-                { word: "must", kk: "[mʌst]", pos: "n.", def: "必要的事物", sentence: "When I see a movie, popcorn is a must.", trans: "我看電影時，爆米花一定是必備的。", emoji: "🍿" },
-                { word: "under the weather", kk: "[͵ʌndɚ ðə ˋwɛðɚ]", pos: "phr.", def: "身體不舒服", sentence: "I am under the weather. I need to take a rest.", trans: "我身體不舒服。我需要休息一下。", emoji: "🌧️" },
-                { word: "treat", kk: "[trit]", pos: "v.", def: "治療", sentence: "The medicine couldn't treat her headache.", trans: "這個藥沒辦法治療她的頭痛。", emoji: "🩺" }
+                    { word: "although", kk: "[ɔl`ðo]", pos: "conj.", def: "雖然", sentence: "Although he is old, he is very strong.", trans: "雖然他年紀大了，但他非常強壯。", emoji: "👴" },
+                    { word: "matter", kk: "[`mætɚ]", pos: "n.", def: "問題；事件", sentence: "What is the matter with your car?", trans: "你的車子有什麼問題嗎？", emoji: "❓" },
+                    { word: "sore throat", kk: "[`sor ,θrot]", pos: "n.", def: "喉嚨痛", sentence: "I have a sore throat, so I can’t sing.", trans: "我喉嚨痛，所以不能唱歌。", emoji: "😫" },
+                    { word: "explain", kk: "[ɪk`splen]", pos: "v.", def: "解釋", sentence: "The teacher explained the math problem to us.", trans: "老師向我們解釋了這道數學題。", emoji: "🗣️" },
+                    { word: "cough", kk: "[kɔf]", pos: "v./n.", def: "咳嗽", sentence: "Please cover your mouth when you cough.", trans: "咳嗽時請遮住你的嘴巴。", emoji: "😷" },
+                    { word: "probably", kk: "[`prɑbəblɪ]", pos: "adv.", def: "很可能；大概", sentence: "It will probably rain this afternoon.", trans: "今天下午很可能會下雨。", emoji: "🌧️" },
+                    { word: "take care of", kk: "[,tek `kɛr əv]", pos: "phr.", def: "照顧", sentence: "She stays home to take care of her baby.", trans: "她待在家裡照顧她的寶寶。", emoji: "🤱" },
+                    { word: "noon", kk: "[nun]", pos: "n.", def: "中午", sentence: "We usually have lunch at noon.", trans: "我們通常在中午吃午餐。", emoji: "🕛" },
+                    { word: "both", kk: "[boθ]", pos: "pron.", def: "兩者（都）", sentence: "Both of my parents are doctors.", trans: "我的父母親兩位都是醫生。", emoji: "✌️" },
+                    { word: "sick", kk: "[sɪk]", pos: "adj.", def: "生病的", sentence: "He didn't go to work because he was sick.", trans: "他因為生病沒去上班。", emoji: "🤒" },
+                    { word: "medicine", kk: "[`mɛdəsṇ]", pos: "n.", def: "藥", sentence: "You should take some medicine for your cold.", trans: "你應該吃點藥來治療感冒。", emoji: "💊" },
+                    { word: "honey", kk: "[`hʌnɪ]", pos: "n.", def: "蜂蜜", sentence: "I like to put honey on my pancakes.", trans: "我喜歡在鬆餅上淋蜂蜜。", emoji: "🍯" },
+                    { word: "lemon", kk: "[`lɛmən]", pos: "n.", def: "檸檬", sentence: "Would you like some lemon in your tea?", trans: "你的茶裡要加點檸檬嗎？", emoji: "🍋" },
+                    { word: "useful", kk: "[`jusfəl]", pos: "adj.", def: "有用的", sentence: "The internet is a useful tool for learning.", trans: "網路是個學習的有用工具。", emoji: "🛠️" },
+                    { word: "head", kk: "[hɛd]", pos: "n.", def: "頭", sentence: "He nodded his head to say yes.", trans: "他點頭表示同意。", emoji: "💆" },
+                    { word: "headache", kk: "[`hɛd,ek]", pos: "n.", def: "頭痛", sentence: "The loud music gave me a headache.", trans: "吵雜的音樂讓我頭痛。", emoji: "🤕" },
+                    { word: "stomachache", kk: "[`stʌmək,ek]", pos: "n.", def: "胃痛", sentence: "Don't eat too much, or you will get a stomachache.", trans: "別吃太多，否則你會胃痛。", emoji: "🤢" },
+                    { word: "fever", kk: "[`fivɚ]", pos: "n.", def: "發燒", sentence: "The baby has a high fever.", trans: "寶寶發高燒了。", emoji: "🌡️" },
+                    { word: "runny nose", kk: "[,rʌnɪ `noz]", pos: "n.", def: "流鼻水", sentence: "I need a tissue because I have a runny nose.", trans: "我需要一張衛生紙，因為我在流鼻水。", emoji: "🤧" },
+                    { word: "knee", kk: "[ni]", pos: "n.", def: "膝蓋", sentence: "He fell down and hurt his knee.", trans: "他跌倒並弄傷了膝蓋。", emoji: "🦵" },
+                    { word: "nail", kk: "[nel]", pos: "n.", def: "指甲", sentence: "Stop biting your nails.", trans: "別再咬指甲了。", emoji: "💅" },
+                    { word: "finger", kk: "[`fɪŋgɚ]", pos: "n.", def: "手指", sentence: "She wears a ring on her finger.", trans: "她在手指上戴了一枚戒指。", emoji: "👆" },
+                    { word: "neck", kk: "[nɛk]", pos: "n.", def: "脖子", sentence: "My neck hurts from looking at the computer too long.", trans: "我看電腦太久，脖子很痛。", emoji: "🦒" },
+                    { word: "shoulder", kk: "[`ʃoldɚ]", pos: "n.", def: "肩膀", sentence: "He tapped me on the shoulder.", trans: "他拍了拍我的肩膀。", emoji: "🤷" },
+                    { word: "common", kk: "[`kɑmən]", pos: "adj.", def: "常見的；共同的", sentence: "Smith is a common last name.", trans: "史密斯是一個常見的姓氏。", emoji: "🏘️" },
+                    { word: "actually", kk: "[`æktʃʊəlɪ]", pos: "adv.", def: "實際上；事實上", sentence: "Actually, I don't like coffee.", trans: "事實上，我不喜歡咖啡。", emoji: "☕" },
+                    { word: "helpful", kk: "[`hɛlpfəl]", pos: "adj.", def: "有幫助的", sentence: "Thank you for your helpful advice.", trans: "謝謝你有幫助的建議。", emoji: "🤝" },
+                    { word: "root", kk: "[rut]", pos: "n.", def: "根", sentence: "Water helps the roots of the plant grow.", trans: "水幫助植物的根生長。", emoji: "🌱" },
+                    { word: "reason", kk: "[`rizṇ]", pos: "n.", def: "原因；理由", sentence: "Tell me the reason why you are late.", trans: "告訴我你遲到的原因。", emoji: "❓" },
+                    { word: "stand", kk: "[stænd]", pos: "n.", def: "攤位", sentence: "They sell hot dogs at that stand.", trans: "他們在那個攤位賣熱狗。", emoji: "🌭" },
+                    { word: "feel like", kk: "[,fil `laɪk]", pos: "phr.", def: "想要", sentence: "I feel like going for a walk.", trans: "我想要去散步。", emoji: "🚶" },
+                    { word: "cold", kk: "[kold]", pos: "n.", def: "感冒", sentence: "Dress warmly so you don't catch a cold.", trans: "穿暖和一點才不會感冒。", emoji: "🥶" },
+                    { word: "well", kk: "[wɛl]", pos: "adj.", def: "健康的", sentence: "I don't feel well today.", trans: "我今天覺得身體不舒服。", emoji: "🤢" },
+                    { word: "must", kk: "[mʌst]", pos: "n.", def: "必要的事物", sentence: "A passport is a must when you travel abroad.", trans: "出國旅遊時護照是必備品。", emoji: "🛂" },
+                    { word: "under the weather", kk: "[ʌndɚ ðə wɛðɚ]", pos: "phr.", def: "身體不舒服", sentence: "I'm feeling a bit under the weather today.", trans: "我今天覺得有點不舒服。", emoji: "🌧️" },
+                    { word: "treat", kk: "[trit]", pos: "v.", def: "治療", sentence: "Doctors treat patients in the hospital.", trans: "醫生在醫院治療病人。", emoji: "👨‍⚕️" },
+                    { word: "recipe", kk: "[`rɛsəpɪ]", pos: "n.", def: "食譜", sentence: "This is my grandmother's secret recipe.", trans: "這是我祖母的秘密食譜。", emoji: "📖" },
+                    { word: "culture", kk: "[`kʌltʃɚ]", pos: "n.", def: "文化", sentence: "Every country has its own culture.", trans: "每個國家都有自己的文化。", emoji: "🌍" },
+                    { word: "garlic", kk: "[`gɑrlɪk]", pos: "n.", def: "大蒜", sentence: "Garlic has a strong smell.", trans: "大蒜有強烈的氣味。", emoji: "🧄" },
+                    { word: "ginger", kk: "[`dʒɪndʒɚ]", pos: "n.", def: "薑", sentence: "Ginger tea can warm you up in winter.", trans: "冬天喝薑茶可以讓你暖和起來。", emoji: "🫚" }
                 ]
             },
             6: {
                 title: "Unit 6: You Can Throw a Ball, Can't You?",
                 words: [
-                { word: "pass", kk: "[pæs]", pos: "v.", def: "傳遞", sentence: "Could you pass the salt, please?", trans: "能麻煩你遞鹽給我嗎？", emoji: "➡" },
-                { word: "throw", kk: "[θro]", pos: "v.", def: "丟；投擲", sentence: "The little boy threw something out of the window.", trans: "那小男孩丟東西出窗外。", emoji: "🥎" },
-                { word: "point", kk: "[pɔɪnt]", pos: "n.", def: "得分", sentence: "David got the most points in the game.", trans: "大衛在比賽裡得到最多分。", emoji: "🔢" },
-                { word: "win", kk: "[wɪn]", pos: "v.", def: "贏；獲勝", sentence: "I believe that we'll win the game if we practice harder.", trans: "如果我們努力練習，我相信我們就能贏得比賽。", emoji: "🏆" },
-                { word: "group", kk: "[grup]", pos: "n.", def: "團體", sentence: "Lily and I work in the same group in the English club.", trans: "莉莉和我在英語社的同組工作。", emoji: "👥" },
-                { word: "grade", kk: "[gred]", pos: "n.", def: "成績", sentence: "Joe always gets good grades in science.", trans: "喬總是在科學拿高分。", emoji: "🅰️" },
-                { word: "fail", kk: "[fel]", pos: "v.", def: "考不及格；失敗", sentence: "Many of the students in my class failed math.", trans: "我班上很多學生數學不及格。", emoji: "❌" },
-                { word: "test", kk: "[tɛst]", pos: "n.", def: "考試", sentence: "Tiffany studied hard for the test.", trans: "蒂芬妮為了考試用功讀書。", emoji: "📝" },
-                { word: "afraid", kk: "[əˋfred]", pos: "adj.", def: "害怕的；擔憂的", sentence: "Rita is afraid of speaking in front of people.", trans: "瑞塔害怕在人群前說話。", emoji: "😨" },
-                { word: "smart", kk: "[smɑrt]", pos: "adj.", def: "聰明的", sentence: "Hank is really a smart guy. He does well in every subject.", trans: "漢克真的是個很聰明的人。他每一科都表現得很好。", emoji: "🧠" },
-                { word: "count... in", kk: "[kaʊnt ˋɪn]", pos: "phr.", def: "算...參加一份", sentence: "A: We plan to go to the USA for holidays. Would you like to join us? B: Sure. Count me in.", trans: "A：我們計劃去美國度假。你想加入我們嗎？ B：當然。算我一份。", emoji: "🙋" },
-                { word: "begin", kk: "[bɪˋgɪn]", pos: "v.", def: "開始", sentence: "Ted began learning English two years ago.", trans: "泰德兩年前開始學英文。", emoji: "🏁" },
-                { word: "meeting", kk: "[ˋmitɪŋ]", pos: "n.", def: "會議；會面", sentence: "We'll have a meeting with the boss this afternoon.", trans: "我們下午和老闆有個會議。", emoji: "🤝" },
-                { word: "come on", kk: "[͵kʌm ˋɑn]", pos: "phr.", def: "快點；少來了", sentence: "Come on, Sandy. Show me your work.", trans: "快點，珊蒂。給我看你的作品。", emoji: "🏃" },
-                { word: "excuse", kk: "[ɪkˋskjuz]", pos: "n.", def: "藉口；理由", sentence: "Don't make an excuse for your mistake.", trans: "不要為你的錯誤找藉口。", emoji: "🤥" },
-                { word: "around the corner", kk: "[ə͵raʊnd ðə ˋkɔrnɚ]", pos: "phr.", def: "即將來臨；在附近", sentence: "Christmas is around the corner.", trans: "聖誕節就快到來。", emoji: "🎄" },
-                { word: "hold back", kk: "[͵hold ˋbæk]", pos: "phr.", def: "阻礙", sentence: "Don't worry. I believe nothing can hold you back.", trans: "別擔心。我相信沒有事情會阻礙你。", emoji: "🚫" },
-                { word: "bring", kk: "[brɪŋ]", pos: "v.", def: "帶來；攜帶", sentence: "Did you bring anything to eat? I'm so hungry.", trans: "你有帶東西來吃嗎？我好餓。", emoji: "🥡" },
-                { word: "honest", kk: "[ˋɑnɪst]", pos: "adj.", def: "誠實的；可信的", sentence: "To be honest, the writer's new book is worse than the last one.", trans: "老實說，這作家的新書比上一本還糟。", emoji: "😇" },
-                { word: "lead to", kk: "[ˋlid tə]", pos: "phr.", def: "導致", sentence: "Eating too much fast food may lead to health problems.", trans: "吃太多速食可能會造成健康問題。", emoji: "🍔" },
-                { word: "push", kk: "[pʊʃ]", pos: "v.", def: "迫使；推動", sentence: "The boss pushed the workers to work for long hours.", trans: "老闆逼迫工人們長時間的工作。", emoji: "😤" },
-                { word: "excellent", kk: "[ˋɛks!ənt]", pos: "adj.", def: "優秀的；極佳的", sentence: "Michael Phelps is an excellent swimmer.", trans: "麥可．費爾普斯是名優秀的泳者。", emoji: "🥇" },
-                { word: "be able to", kk: "[bɪˋeb! tə]", pos: "phr.", def: "能夠", sentence: "Vivian won't be able to come today. Her mother died in the early morning.", trans: "薇薇安今天無法前來。她媽媽今早過世了。", emoji: "💪" },
-                { word: "define", kk: "[dɪˋfaɪn]", pos: "v.", def: "下定義；界定", sentence: "Don't let others define you. Just be yourself. Just be yourself.", trans: "不要讓他人界定你。做自己就好。", emoji: "📖" },
-                { word: "matter", kk: "[ˋmætɚ]", pos: "v.", def: "要緊；重要", sentence: "A: What's the matter? B: It doesn't matter now.", trans: "A：你早上想告訴我什麼？ B：不重要了。", emoji: "🤷‍♂️" },
-                { word: "picture", kk: "[ˋpɪktʃɚ]", pos: "v.", def: "想像", sentence: "Try to picture that you are in a rainforest. What do you see there?", trans: "試著想像你在雨林裡。你在那看到了什麼？", emoji: "💭" },
-                { word: "as for", kk: "[ˋæz fɚ]", pos: "phr.", def: "至於", sentence: "The food in this restaurant is good. As for the service, it's bad.", trans: "這餐廳的食物很棒。至於服務，很糟。", emoji: "👉" },
-                { word: "to the full", kk: "[tə ðə ˋfʊl]", pos: "phr.", def: "盡可能", sentence: "Life is short. You should enjoy it to the full.", trans: "人生很短暫。你應該盡情的享受它。", emoji: "🔋" }
+                    { word: "pass", kk: "[pæs]", pos: "v.", def: "傳遞", sentence: "Can you pass the salt to me?", trans: "你可以把鹽傳給我嗎？", emoji: "✋" },
+                    { word: "throw", kk: "[θro]", pos: "v.", def: "丟；投擲", sentence: "Don't throw trash on the floor.", trans: "不要把垃圾丟在地板上。", emoji: "🥎" },
+                    { word: "point", kk: "[pɔɪnt]", pos: "n.", def: "得分", sentence: "We need one more point to win the game.", trans: "我們還差一分就能贏得比賽。", emoji: "☝️" },
+                    { word: "win", kk: "[wɪn]", pos: "v.", def: "贏；獲勝", sentence: "Who will win the race?", trans: "誰會贏得這場比賽？", emoji: "🏆" },
+                    { word: "group", kk: "[grup]", pos: "n.", def: "團體", sentence: "We worked in a group to finish the project.", trans: "我們分組完成了這個專案。", emoji: "👨‍👦‍👦" },
+                    { word: "grade", kk: "[gred]", pos: "n.", def: "成績", sentence: "She got a good grade on the math test.", trans: "她在數學考試中得到了好成績。", emoji: "📝" },
+                    { word: "fail", kk: "[fel]", pos: "v.", def: "考不及格；失敗", sentence: "He studied hard so he wouldn't fail the exam.", trans: "他努力讀書以免考試不及格。", emoji: "❌" },
+                    { word: "test", kk: "[tɛst]", pos: "n.", def: "考試", sentence: "We have a history test tomorrow.", trans: "我們明天有個歷史考試。", emoji: "📄" },
+                    { word: "afraid", kk: "[ə`fred]", pos: "adj.", def: "害怕的；擔憂的", sentence: "Don't be afraid of the dark.", trans: "不要害怕黑暗。", emoji: "😨" },
+                    { word: "smart", kk: "[smɑrt]", pos: "adj.", def: "聰明的", sentence: "Dolphins are very smart animals.", trans: "海豚是非常聰明的動物。", emoji: "🧠" },
+                    { word: "begin", kk: "[bɪ`gɪn]", pos: "v.", def: "開始", sentence: "The movie will begin at 7:00 PM.", trans: "電影將在晚上七點開始。", emoji: "▶️" },
+                    { word: "meeting", kk: "[`mitɪŋ]", pos: "n.", def: "會議；會面", sentence: "My father is in a meeting right now.", trans: "我父親現在正在開會。", emoji: "🤝" },
+                    { word: "simple", kk: "[`sɪmp!]", pos: "adj.", def: "簡單的", sentence: "The question is simple to answer.", trans: "這個問題很容易回答。", emoji: "👌" },
+                    { word: "expect", kk: "[ɪk`spɛkt]", pos: "v.", def: "預計；期望", sentence: "I expect him to arrive soon.", trans: "我預計他很快就會到達。", emoji: "🕰️" },
+                    { word: "mistake", kk: "[mɪ`stek]", pos: "n.", def: "錯誤", sentence: "Everyone makes mistakes.", trans: "每個人都會犯錯。", emoji: "❌" },
+                    { word: "angle", kk: "[`æŋg!]", pos: "n.", def: "立場；角度", sentence: "Try looking at the problem from a different angle.", trans: "試著從不同的角度看這個問題。", emoji: "📐" },
+                    { word: "allow", kk: "[ə`laʊ]", pos: "v.", def: "允許", sentence: "My parents don't allow me to play video games at night.", trans: "我父母不允許我晚上打電動。", emoji: "✅" },
+                    { word: "laugh", kk: "[læf]", pos: "v./n.", def: "笑；笑聲", sentence: "The joke made everyone laugh.", trans: "那個笑話讓大家都笑了。", emoji: "😂" },
+                    { word: "bring", kk: "[brɪŋ]", pos: "v.", def: "帶來；攜帶", sentence: "Please bring your umbrella; it might rain.", trans: "請帶著你的雨傘，可能會下雨。", emoji: "🎒" },
+                    { word: "honest", kk: "[`ɑnɪst]", pos: "adj.", def: "誠實的；可信的", sentence: "To be honest, I don't like this movie.", trans: "老實說，我不喜歡這部電影。", emoji: "😇" },
+                    { word: "lead to", kk: "[`lid tu]", pos: "phr.", def: "導致", sentence: "Smoking can lead to health problems.", trans: "吸菸會導致健康問題。", emoji: "➡️" },
+                    { word: "push", kk: "[pʊʃ]", pos: "v.", def: "迫使；推動", sentence: "Push the door to open it.", trans: "推門把它打開。", emoji: "✋" },
+                    { word: "excellent", kk: "[`ɛksḷənt]", pos: "adj.", def: "優秀的；極佳的", sentence: "She is an excellent student.", trans: "她是一位優秀的學生。", emoji: "🌟" },
+                    { word: "be able to", kk: "[bi `eb! tu]", pos: "phr.", def: "能夠", sentence: "Will you be able to come to the party?", trans: "你能夠來參加派對嗎？", emoji: "💪" },
+                    { word: "define", kk: "[dɪ`faɪn]", pos: "v.", def: "下定義；界定", sentence: "It is hard to define the word \"love\".", trans: "很難給「愛」這個字下定義。", emoji: "📖" },
+                    { word: "come on", kk: "[,kʌm `ɑn]", pos: "phr.", def: "快點；少來了", sentence: "Come on! We are going to be late.", trans: "快點！我們要遲到了。", emoji: "🏃" },
+                    { word: "excuse", kk: "[ɪk`skjus]", pos: "n.", def: "藉口；理由", sentence: "He always has an excuse for being late.", trans: "他遲到總是有藉口。", emoji: "🤷" },
+                    { word: "around the corner", kk: "[ə,raʊnd ðə `kɔrnɚ]", pos: "phr.", def: "即將來臨；在附近", sentence: "Christmas is around the corner.", trans: "聖誕節即將來臨。", emoji: "🎄" },
+                    { word: "hold back", kk: "[hold `bæk]", pos: "phr.", def: "阻礙", sentence: "Don't let fear hold you back.", trans: "別讓恐懼阻礙了你。", emoji: "🛑" },
+                    { word: "count... in", kk: "[kaʊnt `ɪn]", pos: "phr.", def: "算...參加一份", sentence: "If you are going for a hike, count me in.", trans: "如果你們要去健行，算我一份。", emoji: "🙋" },
+                    { word: "keep in mind", kk: "[,kip ɪn `maɪnd]", pos: "phr.", def: "記住", sentence: "Please keep in mind that the library closes at 5.", trans: "請記住圖書館五點關門。", emoji: "🧠" },
+                    { word: "matter", kk: "[`mætɚ]", pos: "v.", def: "要緊；重要", sentence: "It doesn't matter if you win or lose.", trans: "輸贏並不重要。", emoji: "❗" },
+                    { word: "picture", kk: "[`pɪktʃɚ]", pos: "v.", def: "想像", sentence: "Can you picture yourself living on Mars?", trans: "你能想像自己住在火星上嗎？", emoji: "🖼️" },
+                    { word: "as for", kk: "[`æz fɚ]", pos: "phr.", def: "至於", sentence: "As for me, I prefer tea over coffee.", trans: "至於我，我喜歡茶勝過咖啡。", emoji: "👉" },
+                    { word: "to the full", kk: "[tə ðə `fʊl]", pos: "phr.", def: "盡可能", sentence: "Enjoy your life to the full.", trans: "盡可能享受你的人生。", emoji: "💯" },
+                    { word: "fair", kk: "[fɛr]", pos: "n.", def: "展覽會", sentence: "We visited the book fair yesterday.", trans: "我們昨天參觀了書展。", emoji: "🎡" },
+                    { word: "creative", kk: "[kri`etɪv]", pos: "adj.", def: "有創意的", sentence: "She is very creative and loves to draw.", trans: "她非常有創意，喜歡畫畫。", emoji: "🎨" },
+                    { word: "stereotype", kk: "[`stɛrɪə,taɪp]", pos: "n./v.", def: "刻板印象；對...有偏見", sentence: "There is a stereotype that boys are better at sports.", trans: "有一種刻板印象認為男生比較擅長運動。", emoji: "🏷️" },
+                    { word: "judgement", kk: "[`dʒʌdʒmənt]", pos: "n.", def: "判斷", sentence: "Use your own judgement to decide.", trans: "運用你自己的判斷力來決定。", emoji: "⚖️" },
+                    { word: "respect", kk: "[rɪ`spɛkt]", pos: "v./n.", def: "尊重", sentence: "We should respect our elders.", trans: "我們應該尊重長輩。", emoji: "🙇" },
+                    { word: "gender", kk: "[`dʒɛndɚ]", pos: "n.", def: "性別", sentence: "Gender equality is important.", trans: "性別平等很重要。", emoji: "🚻" },
+                    { word: "self", kk: "[sɛlf]", pos: "n.", def: "自我", sentence: "He has a strong sense of self.", trans: "他有很強烈的自我意識。", emoji: "🪞" },
+                    { word: "talent", kk: "[`tælənt]", pos: "n.", def: "人才；天分", sentence: "She has a talent for music.", trans: "她有音樂天分。", emoji: "🌟" },
+                    { word: "designer", kk: "[dɪ`zaɪnɚ]", pos: "n.", def: "設計師", sentence: "He wants to be a fashion designer.", trans: "他想成為一名時裝設計師。", emoji: "👗" },
+                    { word: "record", kk: "[`rɛkɚd]", pos: "n.", def: "紀錄；記載", sentence: "He holds the world record for swimming.", trans: "他保持著游泳的世界紀錄。", emoji: "🥇" }
                 ]
             }
-        };
-
-        // 文字轉語音功能
-        const speak = (text) => {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.8;
-                window.speechSynthesis.speak(utterance);
-            }
-        };
-
-        // 輔助函式：產生選項
-        const generateOptionsForWord = (targetWord, fullList) => {
-            if (!targetWord || !fullList) return [];
-            const wrongOptions = fullList
-                .filter(item => item.word !== targetWord.word)
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 3)
-                .map(item => item.def);
-            
-            return [...wrongOptions, targetWord.def].sort(() => 0.5 - Math.random());
         };
 
         // QuizMode Component
@@ -331,6 +405,14 @@
                 }
             }, [words]);
 
+            // 自動發音 Effect
+            useEffect(() => {
+                if (shuffledQuestions.length > 0 && currentQuestion < shuffledQuestions.length) {
+                    // 題目切換時自動播放單字發音
+                    speak(shuffledQuestions[currentQuestion].word);
+                }
+            }, [currentQuestion, shuffledQuestions]);
+
             const handleAnswerClick = (option, correctWord) => {
                 if (selectedOption) return;
 
@@ -340,7 +422,7 @@
 
                 if (correct) {
                     setScore(prev => prev + 1);
-                    speak("Correct!");
+                    // 答對時不播放 "Correct"
                 } else {
                     speak("Try again.");
                 }
@@ -623,6 +705,3 @@
     </script>
 </body>
 </html>
-
-
-
