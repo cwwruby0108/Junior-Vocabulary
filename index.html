@@ -67,16 +67,16 @@
         // 綁定到 window 以防萬一
         window.speak = speak;
 
-        // 輔助函式：產生選項
+        // 輔助函式：產生選項 (修改為產生英文單字選項)
         const generateOptionsForWord = (targetWord, fullList) => {
             if (!targetWord || !fullList) return [];
             const wrongOptions = fullList
                 .filter(item => item.word !== targetWord.word)
                 .sort(() => 0.5 - Math.random())
                 .slice(0, 3)
-                .map(item => item.def);
+                .map(item => item.word); // 改為回傳英文單字
             
-            return [...wrongOptions, targetWord.def].sort(() => 0.5 - Math.random());
+            return [...wrongOptions, targetWord.word].sort(() => 0.5 - Math.random()); // 改為回傳英文單字
         };
 
         // --- 內建圖示組件 ---
@@ -491,8 +491,8 @@
                             </div>
 
                             <div className="text-center mb-10">
-                                <div className="text-6xl mb-4">{currentWord.emoji}</div>
-                                <h2 className="text-4xl font-bold text-slate-800 mb-2">{currentWord.word}</h2>
+                                {/* Emoji removed */}
+                                <h2 className="text-4xl font-bold text-slate-800 mb-2">{currentWord.def}</h2>
                                 <button 
                                     onClick={() => speak(currentWord.word)}
                                     className="inline-flex items-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-full text-sm transition-colors"
@@ -506,9 +506,9 @@
                                     let buttonStyle = "border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700";
                                     
                                     if (selectedOption) {
-                                        if (option === currentWord.def) {
+                                        if (option === currentWord.word) {
                                             buttonStyle = "border-2 border-green-500 bg-green-50 text-green-700";
-                                        } else if (option === selectedOption && option !== currentWord.def) {
+                                        } else if (option === selectedOption && option !== currentWord.word) {
                                             buttonStyle = "border-2 border-red-500 bg-red-50 text-red-700";
                                         } else {
                                             buttonStyle = "border-2 border-slate-100 text-slate-300 opacity-50";
@@ -518,13 +518,13 @@
                                     return (
                                         <button
                                             key={option}
-                                            onClick={() => handleAnswerClick(option, currentWord.def)}
+                                            onClick={() => handleAnswerClick(option, currentWord.word)}
                                             disabled={!!selectedOption}
                                             className={`p-4 rounded-xl text-lg font-medium transition-all duration-200 text-left flex justify-between items-center ${buttonStyle}`}
                                         >
                                             {option}
-                                            {selectedOption && option === currentWord.def && <CheckCircle className="text-green-500" />}
-                                            {selectedOption && option === selectedOption && option !== currentWord.def && <XCircle className="text-red-500" />}
+                                            {selectedOption && option === currentWord.word && <CheckCircle className="text-green-500" />}
+                                            {selectedOption && option === selectedOption && option !== currentWord.word && <XCircle className="text-red-500" />}
                                         </button>
                                     );
                                 })}
