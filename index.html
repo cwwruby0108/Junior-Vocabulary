@@ -405,13 +405,12 @@
                 }
             }, [words]);
 
-            // 自動發音 Effect
-            useEffect(() => {
-                if (shuffledQuestions.length > 0 && currentQuestion < shuffledQuestions.length) {
-                    // 題目切換時自動播放單字發音
-                    speak(shuffledQuestions[currentQuestion].word);
-                }
-            }, [currentQuestion, shuffledQuestions]);
+            // 移除自動發音 Effect (確保測驗靜音)
+            // useEffect(() => {
+            //     if (shuffledQuestions.length > 0 && currentQuestion < shuffledQuestions.length) {
+            //         speak(shuffledQuestions[currentQuestion].word);
+            //     }
+            // }, [currentQuestion, shuffledQuestions]);
 
             const handleAnswerClick = (option, correctWord) => {
                 if (selectedOption) return;
@@ -422,10 +421,8 @@
 
                 if (correct) {
                     setScore(prev => prev + 1);
-                    // 答對時不播放 "Correct"
-                } else {
-                    speak("Try again.");
                 }
+                // 移除答錯發音
             };
 
             const nextQuestion = () => {
@@ -491,14 +488,8 @@
                             </div>
 
                             <div className="text-center mb-10">
-                                {/* Emoji removed */}
+                                {/* 移除 Emoji 和發音按鈕，只顯示中文定義 */}
                                 <h2 className="text-4xl font-bold text-slate-800 mb-2">{currentWord.def}</h2>
-                                <button 
-                                    onClick={() => speak(currentWord.word)}
-                                    className="inline-flex items-center gap-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-full text-sm transition-colors"
-                                >
-                                    <Volume2 size={16} /> 聽發音
-                                </button>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3">
@@ -522,7 +513,7 @@
                                             disabled={!!selectedOption}
                                             className={`p-4 rounded-xl text-lg font-medium transition-all duration-200 text-left flex justify-between items-center ${buttonStyle}`}
                                         >
-                                            {option}
+                                            {option} {/* 顯示英文單字選項 */}
                                             {selectedOption && option === currentWord.word && <CheckCircle className="text-green-500" />}
                                             {selectedOption && option === selectedOption && option !== currentWord.word && <XCircle className="text-red-500" />}
                                         </button>
